@@ -1,0 +1,252 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: New profile uses defaults
+PASS: Starting economy
+PASS: Five complete skins available
+PASS: Starter inventory
+PASS: Cannot equip locked skin
+PASS: Unknown skin rejected
+PASS: Insufficient funds rejected
+PASS: Rejected purchase leaves coins unchanged
+PASS: Purchase writes real inventory
+PASS: Purchase deducts exact price
+PASS: Duplicate purchase rejected
+PASS: Owned skin equips
+PASS: Name edit persists
+PASS: Empty names rejected
+PASS: Graphics setting changes
+PASS: Sound setting changes
+PASS: Difficulty setting changes
+PASS: Unknown graphics profile rejected
+PASS: Invalid difficulty rejected
+PASS: Unknown setting rejected
+PASS: Saved profile reloads
+PASS: Name and selected skin survive restart
+PASS: All settings survive restart
+PASS: Incomplete mission cannot be claimed
+PASS: Run rewards use score, survival, kills
+PASS: High score recorded
+PASS: XP advances level
+PASS: Statistics accumulate
+PASS: Achievements unlock from actual stats
+PASS: Mission becomes claimable after progress
+PASS: Mission pays persistent rewards
+PASS: Mission cannot be claimed twice
+PASS: Invalid mission index rejected
+PASS: Daily chest pays once
+PASS: Daily cooldown prevents duplicate payout
+PASS: Earned coins unlock legendary skin
+PASS: Abandon does not grant fabricated rewards
+PASS: Repeated save safely refreshes backup
+PASS: Corrupted primary recovers valid backup
+PASS: Recovery preserves inventory and balance
+PASS: Recovered profile can be saved
+PASS: Recovered save becomes healthy primary
+PASS: Mission claims and daily cooldown survive restart
+PASS: Future save version cannot be overwritten
+PASS: Future save remains intact
+PROFILE TESTS: 45 checks, 0 failures
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS constant movement covers expected distance
+PASS straight movement maintains axis
+PASS body is sampled by distance with consistent segment spacing
+PASS smooth curved path preserves spacing
+PASS movement is time based at 30 FPS
+PASS energy grows snake and awards score
+PASS boost increases actual movement speed
+PASS boost consumes mass with lower bound
+PASS boost stops at minimum mass
+PASS skill activates when ready
+PASS cooldown blocks repeated activation
+PASS electric overdrive changes speed
+PASS skill tracks cooldown and duration independently
+PASS cooldown expires and permits reuse
+PASS skill can activate after cooldown
+PASS cyber shield absorbs a collision
+PASS shield is consumed by collision
+PASS consumed shield does not prevent later collision
+PASS phantom avoids collision and negative slow while active
+PASS phantom protection has finite duration
+PASS spatial query includes neighboring and negative cells
+PASS spatial hash resets without stale collisions
+PASS low profile starts player, seven bots and pooled energy
+PASS three simultaneous touch identities steer, boost and use skill
+PASS touch ability button changes actual ability state
+PASS releasing joystick preserves held boost touch
+PASS arena collection deactivates food and awards real mass
+PASS flame burst slows nearby opponents
+PASS frost ability creates persistent slowing trail
+PASS frozen trail slows other snakes
+PASS bot steers away from lethal arena edge
+PASS head-body collision eliminates snake and credits killer
+PASS player death begins defeat transition
+PASS result signal supplies actual match statistics
+GAMEPLAY TESTS: 34 checks, 0 failures
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: startup begins with Emnio splash
+PASS: resource loading is active
+PASS: loading counters reflect actual resource jobs
+PASS: splash/loading reaches menu
+PASS: all real resource jobs finish
+PASS: five skin definitions loaded
+PASS: menu controls fit1280x720 canvas
+PASS: functional button exists: COBRAS
+PASS: collection opens
+PASS: collection populates skin card controls
+PASS: collection controls fit canvas
+PASS: functional button exists: 150 COINS
+PASS: buy action opens genuine purchase confirmation
+PASS: confirmed purchase grants Inferno skin
+PASS: confirmed purchase deducts150 real coins
+PASS: only owned unequipped skin exposes equip action
+PASS: equip button changes persisted selected skin
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: LOJA
+PASS: shop navigation opens market
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: MISSÕES
+PASS: missions expose real reward actions
+PASS: functional button exists: RESGATAR
+PASS: unfinished mission cannot pay reward
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: RECOMPENSAS
+PASS: functional button exists: ABRIR CARGA
+PASS: daily reward pays documented75 coins3 gems2 fragments
+PASS: functional button exists: ABRIR CARGA
+PASS: daily reward cannot be claimed twice
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: RANKING
+PASS: local ranking opens
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: CONQUISTAS
+PASS: achievement screen uses four real progress objectives
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: AJUSTES
+PASS: settings has sound toggle
+PASS: sound toggle stops music and persists preference
+PASS: graphics quality selector exists
+PASS: low quality applies30 FPS target
+PASS: functional button exists: CRÉDITOS E LICENÇAS
+PASS: standalone app exposes Godot MIT license and attribution
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: PILOTO  /  NV. 1
+PASS: profile name editor exists
+PASS: functional button exists: SALVAR NOME
+PASS: profile editor saves name
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: JOGAR   ›
+PASS: play starts actual arena
+PASS: equipped Inferno skin reaches gameplay
+PASS: profile name reaches gameplay
+PASS: arena initializes real food and bots
+PASS: snake continuously moves through physics updates
+PASS: arena collision with energy collects and grows score
+PASS: simultaneous Android joystick and boost remain active
+PASS: third simultaneous touch activates real ability cooldown
+PASS: touch release clears both control owners
+PASS: pause button pauses arena simulation
+PASS: paused simulation stops movement
+PASS: continue button resumes gameplay
+PASS: lethal arena boundary reaches results after defeat effect
+PASS: defeat commits exactly one completed run
+PASS: survival time crosses gameplay/profile API
+PASS: collected score updates persistent record
+PASS: real results grant economy and XP rewards
+PASS: results controls fit canvas
+PASS: functional button exists: JOGAR NOVAMENTE
+PASS: restart starts fresh playable snake
+PASS: abandon returns to menu
+PASS: abandon cannot farm completed-run rewards
+PASS: new profile object reloads saved state
+PASS: name inventory and equipped skin persist after reopen
+PASS: economy and record persist after reopen
+PASS: graphics and audio preferences persist after reopen
+PASS: wide phones retain complete canvas with aspect preservation
+FLOW RESULT: 79 passed, 0 failed
+Logs da execução: /tmp/warserpent-flow-tests.mS09QY
+
+FINAL SOURCE AFTER FONT LICENSE PACKAGING — isolated ZIP extraction, fresh imports, exit0
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: startup begins with Emnio splash
+PASS: resource loading is active
+PASS: loading counters reflect actual resource jobs
+PASS: splash/loading reaches menu
+PASS: all real resource jobs finish
+PASS: five skin definitions loaded
+PASS: menu controls fit1280x720 canvas
+PASS: functional button exists: COBRAS
+PASS: collection opens
+PASS: collection populates skin card controls
+PASS: collection controls fit canvas
+PASS: functional button exists: 150 COINS
+PASS: buy action opens genuine purchase confirmation
+PASS: confirmed purchase grants Inferno skin
+PASS: confirmed purchase deducts150 real coins
+PASS: only owned unequipped skin exposes equip action
+PASS: equip button changes persisted selected skin
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: LOJA
+PASS: shop navigation opens market
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: MISSÕES
+PASS: missions expose real reward actions
+PASS: functional button exists: RESGATAR
+PASS: unfinished mission cannot pay reward
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: RECOMPENSAS
+PASS: functional button exists: ABRIR CARGA
+PASS: daily reward pays documented75 coins3 gems2 fragments
+PASS: functional button exists: ABRIR CARGA
+PASS: daily reward cannot be claimed twice
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: RANKING
+PASS: local ranking opens
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: CONQUISTAS
+PASS: achievement screen uses four real progress objectives
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: AJUSTES
+PASS: settings has sound toggle
+PASS: sound toggle stops music and persists preference
+PASS: graphics quality selector exists
+PASS: low quality applies30 FPS target
+PASS: functional button exists: CRÉDITOS E LICENÇAS
+PASS: standalone app exposes Godot MIT license and attribution
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: PILOTO  /  NV. 1
+PASS: profile name editor exists
+PASS: functional button exists: SALVAR NOME
+PASS: profile editor saves name
+PASS: functional button exists: VOLTAR
+PASS: functional button exists: JOGAR   ›
+PASS: play starts actual arena
+PASS: equipped Inferno skin reaches gameplay
+PASS: profile name reaches gameplay
+PASS: arena initializes real food and bots
+PASS: snake continuously moves through physics updates
+PASS: arena collision with energy collects and grows score
+PASS: simultaneous Android joystick and boost remain active
+PASS: third simultaneous touch activates real ability cooldown
+PASS: touch release clears both control owners
+PASS: pause button pauses arena simulation
+PASS: paused simulation stops movement
+PASS: continue button resumes gameplay
+PASS: lethal arena boundary reaches results after defeat effect
+PASS: defeat commits exactly one completed run
+PASS: survival time crosses gameplay/profile API
+PASS: collected score updates persistent record
+PASS: real results grant economy and XP rewards
+PASS: results controls fit canvas
+PASS: functional button exists: JOGAR NOVAMENTE
+PASS: restart starts fresh playable snake
+PASS: abandon returns to menu
+PASS: abandon cannot farm completed-run rewards
+PASS: new profile object reloads saved state
+PASS: name inventory and equipped skin persist after reopen
+PASS: economy and record persist after reopen
+PASS: graphics and audio preferences persist after reopen
+PASS: wide phones retain complete canvas with aspect preservation
+FLOW RESULT: 79 passed, 0 failed

@@ -1,0 +1,8 @@
+.godot/
+builds/*.apk
+builds/*.zip
+*.keystore
+*.jks
+*.log
+local.properties
+.DS_Store

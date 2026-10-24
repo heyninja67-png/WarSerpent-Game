@@ -1,0 +1,55 @@
+ANDROID APK VALIDATION — FINAL War Serpent.io
+Executed: 2026-10-24T20:08:47.244306+00:00, current cloud machine.
+
+Artifact: builds/WarSerpentIO-debug.apk
+Size: 59801621 bytes (57.03 MiB)
+SHA256: 1682e62fcc7e273623ca919b480247a06678e94843f643665c2825439a66ed1e
+Build command: ./tools/build_android.sh
+Independent validation: python3 tools/validate_android.py
+Full final build log: builds/android-build.log
+Full validation output: docs/apk_validation_details.txt
+Outcome: exit0; APK exported, narrowly manifest-corrected, aligned, re-signed,
+and independently validated after final app changes including engine/font credits.
+Source Main.gd SHA256: 4beda4e01aab5fd27ffb7f195bb2869ce949844958a9742904eeb897cb1dd007
+Source ArenaGame.gd SHA256: b338cdc2a229abfadada101c896f3b923cfbb7eb37d0a41428aebfb8f4164901
+
+Manifest (aapt badging+xmltree, exit0):
+- package com.emnioggs.warserpent; label War Serpent.io; v1.0.0/code1.
+- min API24, target/compile API36, landscape0, debuggable development build.
+- OpenGL ES3, GL Compatibility renderer; no uses-permission declarations.
+- exported launcher activity alias with MAIN/LAUNCHER present.
+- FileProvider authority: com.emnioggs.warserpent.fileprovider
+- StartupProvider authority: com.emnioggs.warserpent.androidx-startup
+- authority values distinct; narrow correction idempotence passed.
+- official template unchanged; defect/correction in docs/toolchain_notes.md.
+
+Signature (apksigner verify --verbose --print-certs, exit0):
+- v2 true; v3 true; one RSA2048 development signer.
+- certificate SHA256: 5764b2c60e35c535276fccf3e112de4f5d5f991c6512f8b584624743d61db620
+- private signing keystore outside source tree/ZIP; no release key supplied.
+
+Executable/resources:
+- ZIP CRC integrity passed for all entries; real classes.dex+secondary DEX files.
+- four native libraries for ARM64 and ARMv7 present with actual ELF headers.
+- compiled Main.scn, Main.gdc, ArenaGame.gdc, Profile.gdc, snake_model.gdc,
+  arena_brain.gdc and spatial_hash.gdc packaged.
+- data/catalog.json parsed and exactly matches source JSON; five skins.
+- 126 packaged Godot asset resources, including 51 imported assets.
+- snake/UI/branding texture and audio resources included.
+- res://assets/fonts/LICENSE-DejaVu.txt PRESENT and byte-identical to source
+  (APK ZIP entry assets/assets/fonts/LICENSE-DejaVu.txt).
+- credits display exposes the bundled font notice and Godot engine license.
+
+Alignment:
+- zipalign -c -P16 4 passed on final signed APK.
+- all ARM64 LOAD segments in libgodot_android.so and libc++_shared.so
+  p_align0x4000 (16KB), independently checked with readelf.
+- ARMv7 LOAD p_align0x1000 (4KB), conventional32bit architecture.
+- native entries compressed, extractNativeLibs=true; extraction on install.
+
+Device tests:
+- adb devices -l returned no connected device/emulator.
+- installation, launch, Android lifecycle, real multitouch, GPU/FPS, battery,
+  and memory profiling on Android hardware were NOT executed.
+- desktop rendering/headless gameplay checks reported separately.
+- signed compilation does not establish full Android-device compatibility.
