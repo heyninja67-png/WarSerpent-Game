@@ -1,7 +1,10 @@
 [
-  {"id":0,"name":"Volt Serpent","rarity":"Comum","price":0,"ability":"Electric Overdrive","description":"Aceleração elétrica por 3 s. Velocidade de ataque e fuga com rastro de energia.","color":"42e6ff","duration":3.0,"cooldown":12.0,"family":"electric"},
-  {"id":1,"name":"Inferno Viper","rarity":"Incomum","price":150,"ability":"Flame Burst","description":"Uma explosão de magma desacelera adversários próximos durante 3 s.","color":"ff713f","duration":3.0,"cooldown":14.0,"family":"magma"},
-  {"id":2,"name":"Frost Fang","rarity":"Rara","price":250,"ability":"Frozen Trail","description":"Deixa um rastro congelante que reduz a velocidade dos inimigos.","color":"a1edff","duration":4.0,"cooldown":15.0,"family":"ice"},
-  {"id":3,"name":"Cyber Reaper","rarity":"Épica","price":400,"ability":"Cyber Shield","description":"Escudo robótico absorve uma colisão elegível durante 4 s.","color":"79ffb4","duration":4.0,"cooldown":16.0,"family":"mecha"},
-  {"id":4,"name":"Shadow Phantom","rarity":"Lendária","price":600,"ability":"Phantom Shift","description":"Forma espectral atravessa adversários durante 2 s.","color":"c784ff","duration":2.0,"cooldown":17.0,"family":"spectral"}
+  {"id":0,"name":"Volt Serpent","rarity":"Common","price":0,"ability":"Electric Overdrive","description":"Surge ahead for 3 seconds with a charged energy trail.","color":"42e6ff","duration":3.0,"cooldown":12.0,"family":"electric"},
+  {"id":1,"name":"Inferno Viper","rarity":"Uncommon","price":150,"ability":"Flame Burst","description":"A short magma blast slows nearby rivals for 3 seconds.","color":"ff713f","duration":3.0,"cooldown":14.0,"family":"magma"},
+  {"id":2,"name":"Frost Fang","rarity":"Rare","price":250,"ability":"Frozen Trail","description":"Leave an icy trail for 4 seconds that slows other serpents.","color":"a1edff","duration":4.0,"cooldown":15.0,"family":"ice"},
+  {"id":3,"name":"Cyber Reaper","rarity":"Epic","price":400,"ability":"Cyber Shield","description":"A robotic shield absorbs one eligible collision within 4 seconds.","color":"79ffb4","duration":4.0,"cooldown":16.0,"family":"mecha"},
+  {"id":4,"name":"Shadow Phantom","rarity":"Legendary","price":600,"ability":"Phantom Shift","description":"Enter spectral form and pass through rivals for 2 seconds.","color":"c784ff","duration":2.0,"cooldown":17.0,"family":"spectral"},
+  {"id":5,"name":"Solar Wyrm","rarity":"Epic","price":450,"ability":"Solar Magnet","description":"Draw nearby energy toward your head for 4 seconds.","color":"ffd86a","duration":4.0,"cooldown":15.0,"family":"solar"},
+  {"id":6,"name":"Neon Samurai","rarity":"Mythic","price":750,"ability":"Samurai Dash","description":"Make a rapid directional dash for 0.8 seconds. Collisions remain lethal.","color":"ff5a9d","duration":0.8,"cooldown":11.0,"family":"samurai"},
+  {"id":7,"name":"Toxic Fang","rarity":"Uncommon","price":200,"ability":"Toxic Cloud","description":"Release a toxic cloud for 3 seconds that slows nearby rivals.","color":"b5ff52","duration":3.0,"cooldown":14.0,"family":"toxic"}
 ]

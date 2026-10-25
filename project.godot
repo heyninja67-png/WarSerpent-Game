@@ -3,7 +3,9 @@ config_version=5
 
 [application]
 config/name="War Serpent.io"
-config/version="1.0.0"
+config/version="1.1.0"
+boot_splash/show_image=false
+boot_splash/bg_color=Color(0.012, 0.018, 0.035, 1)
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://assets/branding/icon.png"
@@ -14,7 +16,8 @@ window/size/viewport_height=720
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
+window/stretch/aspect="expand"
+window/size/mode=3
 window/handheld/orientation=0
 
 [rendering]
@@ -26,6 +29,7 @@ environment/defaults/default_clear_color=Color(0.018, 0.025, 0.06, 1)
 
 [audio]
 driver/enable_input=false
+
 
 [input_devices]
 pointing/emulate_touch_from_mouse=false

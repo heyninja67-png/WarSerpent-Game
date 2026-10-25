@@ -11,7 +11,7 @@ func run() -> void:
 	seed(4432)
 	var start := Time.get_ticks_usec()
 	var frames := 0
-	for skin in range(5):
+	for skin in range(8):
 		var game := Arena.new()
 		game.configure(skin, 2)
 		game.set_audio_enabled(false)
@@ -23,7 +23,7 @@ func run() -> void:
 		for frame in range(1800):
 			if game.ended:
 				break
-			pilot.decide(game.player, game.foods, game.snakes, game.BOUNDS, 1.0 / 60)
+			pilot.decide(game.player, game.foods, game.snakes, game.BOUNDS, 1.0 / 60, game.food_grid, game.body_grid)
 			game.joystick_vector = Vector2.from_angle(pilot.target_angle)
 			game.boost_id = 12 if pilot.wants_boost else -1
 			if frame % 120 == 0:

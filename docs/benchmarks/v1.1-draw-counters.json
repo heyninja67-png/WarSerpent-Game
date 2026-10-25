@@ -1,0 +1,10 @@
+{
+  "backend": "X11",
+  "draw_calls_last_frame": 81.0,
+  "draw_command_mean_us": 722.622222222222,
+  "draw_command_p95_us": 807.0,
+  "frames": 180,
+  "rendered_objects_last_frame": 342.0,
+  "segments_each": 40,
+  "snakes": 10
+}

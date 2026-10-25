@@ -1,0 +1,9 @@
+{
+  "ai_decision_us": 94.0483333333333,
+  "arena_step_us": 1079.80472222222,
+  "body_grid_us": 217.273333333333,
+  "food_count": 1000,
+  "model_40_segments_us": 43.8805833333333,
+  "snake_count": 10,
+  "starter_segments": 33
+}

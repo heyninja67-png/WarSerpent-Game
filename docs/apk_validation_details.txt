@@ -20,7 +20,7 @@ Signer #1 public key MD5 digest: e8cead44bc7c9e3eb1338c325a24b043
 exit=0
 
 $ /workspace/toolchains/android-sdk/build-tools/35.0.1/aapt dump badging /workspace/WarSerpent-Game/builds/WarSerpentIO-debug.apk
-package: name='com.emnioggs.warserpent' versionCode='1' versionName='1.0.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
+package: name='com.emnioggs.warserpent' versionCode='2' versionName='1.1.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
 install-location:'auto'
 sdkVersion:'24'
 targetSdkVersion:'36'
@@ -121,7 +121,7 @@ application-icon-640:'res/mipmap-anydpi-v26/icon.xml'
 application-icon-65534:'res/mipmap-anydpi-v26/icon.xml'
 application: label='War Serpent.io' icon='res/mipmap-anydpi-v26/icon.xml'
 application-isGame
-application-debuggable
+uses-permission: name='android.permission.INTERNET'
 feature-group: label=''
   uses-gl-es: '0x30000'
   uses-feature: name='android.hardware.faketouch'
@@ -142,8 +142,8 @@ exit=0
 $ /workspace/toolchains/android-sdk/build-tools/35.0.1/aapt dump xmltree /workspace/WarSerpent-Game/builds/WarSerpentIO-debug.apk AndroidManifest.xml
 N: android=http://schemas.android.com/apk/res/android
   E: manifest (line=2)
-    A: android:versionCode(0x0101021b)=(type 0x10)0x1
-    A: android:versionName(0x0101021c)="1.0.0" (Raw: "1.0.0")
+    A: android:versionCode(0x0101021b)=(type 0x10)0x2
+    A: android:versionName(0x0101021c)="1.1.0" (Raw: "1.1.0")
     A: android:installLocation(0x010102b7)=(type 0x10)0x0
     A: android:compileSdkVersion(0x01010572)=(type 0x10)0x24
     A: android:compileSdkVersionCodename(0x01010573)="16" (Raw: "16")
@@ -164,7 +164,6 @@ N: android=http://schemas.android.com/apk/res/android
     E: application (line=22)
       A: android:label(0x01010001)=@0x7f0b0004
       A: android:icon(0x01010002)=@0x7f0a0000
-      A: android:debuggable(0x0101000f)=(type 0x12)0xffffffff
       A: android:allowBackup(0x01010280)=(type 0x12)0x0
       A: android:isGame(0x010103f4)=(type 0x12)0x1
       A: android:extractNativeLibs(0x010104ea)=(type 0x12)0xffffffff
@@ -172,10 +171,10 @@ N: android=http://schemas.android.com/apk/res/android
       A: android:appComponentFactory(0x0101057a)="androidx.core.app.CoreComponentFactory" (Raw: "androidx.core.app.CoreComponentFactory")
       A: android:hasFragileUserData(0x0101059a)=(type 0x12)0x0
       A: android:requestLegacyExternalStorage(0x01010603)=(type 0x12)0x0
-      E: profileable (line=33)
+      E: profileable (line=32)
         A: android:enabled(0x0101000e)=(type 0x12)0xffffffff
         A: android:shell(0x01010594)=(type 0x12)0xffffffff
-      E: activity (line=37)
+      E: activity (line=36)
         A: android:theme(0x01010000)=@0x7f0c0009
         A: android:name(0x01010003)="com.godot.game.GodotApp" (Raw: "com.godot.game.GodotApp")
         A: android:exported(0x01010010)=(type 0x12)0x0
@@ -185,59 +184,59 @@ N: android=http://schemas.android.com/apk/res/android
         A: android:configChanges(0x0101001f)=(type 0x11)0x3ff4
         A: android:windowSoftInputMode(0x0101022b)=(type 0x11)0x10
         A: android:resizeableActivity(0x010104f6)=(type 0x12)0x1
-      E: activity-alias (line=48)
+      E: activity-alias (line=47)
         A: android:name(0x01010003)="com.godot.game.GodotAppLauncher" (Raw: "com.godot.game.GodotAppLauncher")
         A: android:exported(0x01010010)=(type 0x12)0xffffffff
         A: android:targetActivity(0x01010202)="com.godot.game.GodotApp" (Raw: "com.godot.game.GodotApp")
-        E: intent-filter (line=52)
-          E: action (line=53)
+        E: intent-filter (line=51)
+          E: action (line=52)
             A: android:name(0x01010003)="android.intent.action.MAIN" (Raw: "android.intent.action.MAIN")
-          E: category (line=55)
+          E: category (line=54)
             A: android:name(0x01010003)="android.intent.category.DEFAULT" (Raw: "android.intent.category.DEFAULT")
-          E: category (line=56)
+          E: category (line=55)
             A: android:name(0x01010003)="android.intent.category.LAUNCHER" (Raw: "android.intent.category.LAUNCHER")
-      E: meta-data (line=61)
+      E: meta-data (line=60)
         A: android:name(0x01010003)="org.godotengine.library.version" (Raw: "org.godotengine.library.version")
         A: android:value(0x01010024)="4.6.3.stable" (Raw: "4.6.3.stable")
-      E: service (line=65)
+      E: service (line=64)
         A: android:name(0x01010003)="org.godotengine.godot.GodotDownloaderService" (Raw: "org.godotengine.godot.GodotDownloaderService")
-      E: activity (line=67)
+      E: activity (line=66)
         A: android:theme(0x01010000)=@0x01030010
         A: android:name(0x01010003)="org.godotengine.godot.utils.ProcessPhoenix" (Raw: "org.godotengine.godot.utils.ProcessPhoenix")
         A: android:exported(0x01010010)=(type 0x12)0x0
         A: android:process(0x01010011)=":phoenix" (Raw: ":phoenix")
-      E: provider (line=73)
+      E: provider (line=72)
         A: android:name(0x01010003)="androidx.core.content.FileProvider" (Raw: "androidx.core.content.FileProvider")
         A: android:exported(0x01010010)=(type 0x12)0x0
         A: android:authorities(0x01010018)="com.emnioggs.warserpent.fileprovider" (Raw: "com.emnioggs.warserpent.fileprovider")
         A: android:grantUriPermissions(0x0101001b)=(type 0x12)0xffffffff
-        E: meta-data (line=78)
+        E: meta-data (line=77)
           A: android:name(0x01010003)="android.support.FILE_PROVIDER_PATHS" (Raw: "android.support.FILE_PROVIDER_PATHS")
           A: android:resource(0x01010025)=@0x7f0e0000
-      E: provider (line=82)
+      E: provider (line=81)
         A: android:name(0x01010003)="androidx.startup.InitializationProvider" (Raw: "androidx.startup.InitializationProvider")
         A: android:exported(0x01010010)=(type 0x12)0x0
         A: android:authorities(0x01010018)="com.emnioggs.warserpent.androidx-startup" (Raw: "com.emnioggs.warserpent.androidx-startup")
-        E: meta-data (line=86)
+        E: meta-data (line=85)
           A: android:name(0x01010003)="androidx.profileinstaller.ProfileInstallerInitializer" (Raw: "androidx.profileinstaller.ProfileInstallerInitializer")
           A: android:value(0x01010024)="androidx.startup" (Raw: "androidx.startup")
-      E: receiver (line=91)
+      E: receiver (line=90)
         A: android:name(0x01010003)="androidx.profileinstaller.ProfileInstallReceiver" (Raw: "androidx.profileinstaller.ProfileInstallReceiver")
         A: android:permission(0x01010006)="android.permission.DUMP" (Raw: "android.permission.DUMP")
         A: android:enabled(0x0101000e)=(type 0x12)0xffffffff
         A: android:exported(0x01010010)=(type 0x12)0xffffffff
         A: android:directBootAware(0x01010505)=(type 0x12)0x0
-        E: intent-filter (line=97)
-          E: action (line=98)
+        E: intent-filter (line=96)
+          E: action (line=97)
             A: android:name(0x01010003)="androidx.profileinstaller.action.INSTALL_PROFILE" (Raw: "androidx.profileinstaller.action.INSTALL_PROFILE")
-        E: intent-filter (line=100)
-          E: action (line=101)
+        E: intent-filter (line=99)
+          E: action (line=100)
             A: android:name(0x01010003)="androidx.profileinstaller.action.SKIP_FILE" (Raw: "androidx.profileinstaller.action.SKIP_FILE")
-        E: intent-filter (line=103)
-          E: action (line=104)
+        E: intent-filter (line=102)
+          E: action (line=103)
             A: android:name(0x01010003)="androidx.profileinstaller.action.SAVE_PROFILE" (Raw: "androidx.profileinstaller.action.SAVE_PROFILE")
-        E: intent-filter (line=106)
-          E: action (line=107)
+        E: intent-filter (line=105)
+          E: action (line=106)
             A: android:name(0x01010003)="androidx.profileinstaller.action.BENCHMARK_OPERATION" (Raw: "androidx.profileinstaller.action.BENCHMARK_OPERATION")
       E: meta-data (line=0)
         A: android:name(0x01010003)="org.godotengine.rendering.method" (Raw: "org.godotengine.rendering.method")
@@ -245,6 +244,8 @@ N: android=http://schemas.android.com/apk/res/android
       E: meta-data (line=0)
         A: android:name(0x01010003)="org.godotengine.editor.version" (Raw: "org.godotengine.editor.version")
         A: android:value(0x01010024)="4.6.3.stable" (Raw: "4.6.3.stable")
+    E: uses-permission (line=0)
+      A: android:name(0x01010003)="android.permission.INTERNET" (Raw: "android.permission.INTERNET")
 
 exit=0
 
@@ -252,7 +253,21 @@ $ /workspace/toolchains/android-sdk/build-tools/35.0.1/zipalign -c -P 16 4 /work
 
 exit=0
 
-$ readelf -lW /tmp/warserpent-elf-ukgk61zu/lib/arm64-v8a/libc++_shared.so
+Packaged Android runtime arguments: ["--xr_mode_regular", "--xr-mode", "off", "--fullscreen", "--edge_to_edge", "--background_color", "#000000"]
+
+$ godot --headless --path /tmp/warserpent-apk-resources-o7doo2jy/bundle --script /tmp/warserpent-apk-resources-o7doo2jy/check_packaged_game.gd
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PACKAGED_HOST_HINT=LAN ROOM  172.31.2.94:24680
+PACKAGED_GAME_RESOURCE_CHECKS=58 FAILURES=0
+PACKAGED_MUSIC={"arena":{"decoded_peak":0.687072932720184,"duration":45.1764640808105,"loop":true},"menu":{"decoded_peak":0.767738938331604,"duration":45.1764640808105,"loop":true}}
+PACKAGED_ENGINE_BOOT_IMAGE=false; ASPECT=expand; NATIVE_CUSTOM_ICON_DENSITIES=6
+
+exit=0
+
+Official release-template native payload verified SHA256 c4c2fe5cbcb1fba0003a31fc7ab29a9bb12df6cc187ec45a806462540e83d93b lib/arm64-v8a/libc++_shared.so
+
+$ readelf -lW /tmp/warserpent-elf-wjk6cabz/lib/arm64-v8a/libc++_shared.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0
@@ -288,7 +303,9 @@ Program Headers:
 
 exit=0
 
-$ readelf -lW /tmp/warserpent-elf-ukgk61zu/lib/arm64-v8a/libgodot_android.so
+Official release-template native payload verified SHA256 b4085c7f15575246530474b1fa4291c70e4a8177173d2d6fc597300208cac282 lib/arm64-v8a/libgodot_android.so
+
+$ readelf -lW /tmp/warserpent-elf-wjk6cabz/lib/arm64-v8a/libgodot_android.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0
@@ -297,12 +314,12 @@ There are 9 program headers, starting at offset 64
 Program Headers:
   Type           Offset   VirtAddr           PhysAddr           FileSiz  MemSiz   Flg Align
   PHDR           0x000040 0x0000000000000040 0x0000000000000040 0x0001f8 0x0001f8 R   0x8
-  LOAD           0x000000 0x0000000000000000 0x0000000000000000 0x4633b20 0x4633b20 R E 0x4000
-  LOAD           0x4633b20 0x0000000004637b20 0x0000000004637b20 0x19c758 0x19d4e0 RW  0x4000
-  LOAD           0x47d0278 0x00000000047d8278 0x00000000047d8278 0x00a408 0x1e2738 RW  0x4000
-  DYNAMIC        0x47cb220 0x00000000047cf220 0x00000000047cf220 0x000240 0x000240 RW  0x8
-  GNU_RELRO      0x4633b20 0x0000000004637b20 0x0000000004637b20 0x19c758 0x19d4e0 R   0x1
-  GNU_EH_FRAME   0xb8fe60 0x0000000000b8fe60 0x0000000000b8fe60 0x113d6c 0x113d6c R   0x4
+  LOAD           0x000000 0x0000000000000000 0x0000000000000000 0x419e970 0x419e970 R E 0x4000
+  LOAD           0x419e970 0x00000000041a2970 0x00000000041a2970 0x1672e0 0x167690 RW  0x4000
+  LOAD           0x4305c50 0x000000000430dc50 0x000000000430dc50 0x00a410 0x1e10f0 RW  0x4000
+  DYNAMIC        0x43010a8 0x00000000043050a8 0x00000000043050a8 0x000240 0x000240 RW  0x8
+  GNU_RELRO      0x419e970 0x00000000041a2970 0x00000000041a2970 0x1672e0 0x167690 R   0x1
+  GNU_EH_FRAME   0xad4f50 0x0000000000ad4f50 0x0000000000ad4f50 0x10295c 0x10295c R   0x4
   GNU_STACK      0x000000 0x0000000000000000 0x0000000000000000 0x000000 0x000000 RW  0
   NOTE           0x000238 0x0000000000000238 0x0000000000000238 0x0000bc 0x0000bc R   0x4
 
@@ -320,7 +337,9 @@ Program Headers:
 
 exit=0
 
-$ readelf -lW /tmp/warserpent-elf-ukgk61zu/lib/armeabi-v7a/libc++_shared.so
+Official release-template native payload verified SHA256 af383654daf4cf0829615460419a180f84edd9d8bf51aa0f81ed0db811bf8491 lib/armeabi-v7a/libc++_shared.so
+
+$ readelf -lW /tmp/warserpent-elf-wjk6cabz/lib/armeabi-v7a/libc++_shared.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0
@@ -352,7 +371,9 @@ Program Headers:
 
 exit=0
 
-$ readelf -lW /tmp/warserpent-elf-ukgk61zu/lib/armeabi-v7a/libgodot_android.so
+Official release-template native payload verified SHA256 c8687b05ea01f772647db6ba7bc85439b687c2603df63555796558f5e1f97bb9 lib/armeabi-v7a/libgodot_android.so
+
+$ readelf -lW /tmp/warserpent-elf-wjk6cabz/lib/armeabi-v7a/libgodot_android.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0
@@ -361,14 +382,14 @@ There are 9 program headers, starting at offset 52
 Program Headers:
   Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
   PHDR           0x000034 0x00000034 0x00000034 0x00120 0x00120 R   0x4
-  LOAD           0x000000 0x00000000 0x00000000 0x4ceceb0 0x4ceceb0 R E 0x1000
-  LOAD           0x4ceceb0 0x04cedeb0 0x04cedeb0 0xd3f8c 0xd4150 RW  0x1000
-  LOAD           0x4dc0e40 0x04dc2e40 0x04dc2e40 0x067c0 0x11603c RW  0x1000
-  DYNAMIC        0x4dbe734 0x04dbf734 0x04dbf734 0x00120 0x00120 RW  0x4
-  GNU_RELRO      0x4ceceb0 0x04cedeb0 0x04cedeb0 0xd3f8c 0xd4150 R   0x1
+  LOAD           0x000000 0x00000000 0x00000000 0x4615240 0x4615240 R E 0x1000
+  LOAD           0x4615240 0x04616240 0x04616240 0xb9228 0xb9dc0 RW  0x1000
+  LOAD           0x46ce468 0x046d0468 0x046d0468 0x067c8 0x1151b4 RW  0x1000
+  DYNAMIC        0x46cbfb8 0x046ccfb8 0x046ccfb8 0x00120 0x00120 RW  0x4
+  GNU_RELRO      0x4615240 0x04616240 0x04616240 0xb9228 0xb9dc0 R   0x1
   GNU_STACK      0x000000 0x00000000 0x00000000 0x00000 0x00000 RW  0
   NOTE           0x000154 0x00000154 0x00000154 0x000bc 0x000bc R   0x4
-  ARM_EXIDX      0x18a5e0 0x0018a5e0 0x0018a5e0 0xc8060 0xc8060 R   0x4
+  ARM_EXIDX      0x154c68 0x00154c68 0x00154c68 0xbacc0 0xbacc0 R   0x4
 
  Section to Segment mapping:
   Segment Sections...

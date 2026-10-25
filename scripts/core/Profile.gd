@@ -2,19 +2,19 @@ class_name PlayerProfile
 extends RefCounted
 ## Versioned local progression. No network, real currency, or secret data.
 
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 const DEFAULT_PATH := "user://profile.json"
 const MISSION_DEFS := [
-	{"title":"Coletor de energia", "description":"Colete 100 energias", "stat":"energy", "target":100, "coins":80, "gems":2, "fragments":3},
-	{"title":"Primeira caçada", "description":"Elimine 3 adversários", "stat":"kills", "target":3, "coins":120, "gems":3, "fragments":5},
-	{"title":"Resistência neon", "description":"Sobreviva 120 s no total", "stat":"survival", "target":120, "coins":100, "gems":2, "fragments":3},
-	{"title":"Ascensão de Emnio", "description":"Acumule 2.000 pontos", "stat":"score", "target":2000, "coins":200, "gems":5, "fragments":8}
+	{"title":"Energy collector", "description":"Collect 100 energy", "stat":"energy", "target":100, "coins":80, "gems":2, "fragments":3},
+	{"title":"First hunt", "description":"Eliminate 3 rivals", "stat":"kills", "target":3, "coins":120, "gems":3, "fragments":5},
+	{"title":"Neon endurance", "description":"Survive for a total of 120 seconds", "stat":"survival", "target":120, "coins":100, "gems":2, "fragments":3},
+	{"title":"Emnio rising", "description":"Earn a total of 2,000 points", "stat":"score", "target":2000, "coins":200, "gems":5, "fragments":8}
 ]
 const ACHIEVEMENT_DEFS := [
-	{"id":"first_run", "title":"Primeira órbita", "description":"Conclua uma partida", "stat":"runs", "target":1},
-	{"id":"collector", "title":"Reator vivo", "description":"Colete 250 energias", "stat":"energy", "target":250},
-	{"id":"hunter", "title":"Predador neon", "description":"Elimine 10 adversários", "stat":"kills", "target":10},
-	{"id":"survivor", "title":"Além do limite", "description":"Sobreviva 180 s em uma partida", "stat":"best_survival", "target":180}
+	{"id":"first_run", "title":"First orbit", "description":"Complete one run", "stat":"runs", "target":1},
+	{"id":"collector", "title":"Living reactor", "description":"Collect 250 energy", "stat":"energy", "target":250},
+	{"id":"hunter", "title":"Neon predator", "description":"Eliminate 10 rivals", "stat":"kills", "target":10},
+	{"id":"survivor", "title":"Beyond the edge", "description":"Survive for 180 seconds in one run", "stat":"best_survival", "target":180}
 ]
 
 var data: Dictionary = {}
@@ -32,9 +32,9 @@ func _init() -> void:
 
 func _defaults() -> Dictionary:
 	return {
-		"version": SAVE_VERSION, "name": "PILOTO", "coins": 500, "gems": 25,
+		"version": SAVE_VERSION, "name": "PILOT", "coins": 500, "gems": 25,
 		"fragments": 0, "xp": 0, "level": 1, "owned": [0], "equipped": 0,
-		"best_score": 0, "settings": {"sound": true, "quality": "Auto", "difficulty": 1},
+		"best_score": 0, "settings": {"sound": true, "music": true, "quality": "Auto", "difficulty": 1},
 		"stats": {"runs": 0, "score": 0, "energy": 0, "kills": 0, "survival": 0.0, "best_survival": 0.0},
 		"missions_claimed": [], "achievements": [], "daily_claim_day": ""
 	}
@@ -52,7 +52,7 @@ func _read_save(path: String) -> Dictionary:
 	var candidate: Dictionary = parsed
 	# Reject future schema versions instead of overwriting them with an older client.
 	if int(candidate.get("version", 0)) > SAVE_VERSION:
-		last_error = "Save de uma versão mais recente; arquivo preservado."
+		last_error = "This save belongs to a newer version; the file was preserved."
 		return {}
 	if not candidate.has("name") or not candidate.get("owned") is Array or not candidate.get("settings") is Dictionary:
 		return {}
@@ -69,7 +69,7 @@ func load_profile(path: String = DEFAULT_PATH) -> bool:
 	if loaded.is_empty():
 		data = _defaults()
 		if FileAccess.file_exists(save_path) and last_error.is_empty():
-			last_error = "Save inválido; perfil local padrão carregado."
+			last_error = "Invalid save; a default local profile was loaded."
 		return false
 	data = _normalize(loaded)
 	return true
@@ -82,7 +82,7 @@ func _normalize(loaded: Dictionary) -> Dictionary:
 	clean["version"] = SAVE_VERSION
 	clean["name"] = str(clean["name"]).strip_edges().left(18)
 	if clean["name"].is_empty():
-		clean["name"] = "PILOTO"
+		clean["name"] = "PILOT"
 	for key in ["coins", "gems", "fragments", "xp", "best_score"]:
 		clean[key] = clampi(int(clean[key]), 0, 2000000000)
 	clean["level"] = 1 + int(clean["xp"]) / 200
@@ -102,8 +102,11 @@ func _normalize(loaded: Dictionary) -> Dictionary:
 			if clean["settings"].has(key):
 				settings[key] = clean["settings"][key]
 	settings["sound"] = bool(settings["sound"])
-	if not ["Auto", "Baixo", "Médio", "Alto"].has(settings["quality"]):
-		settings["quality"] = "Auto"
+	# v1 had one audio switch. Preserve a player's existing all-audio mute.
+	if int(loaded.get("version", 1)) < 2 and not loaded["settings"].has("music"):
+		settings["music"] = settings["sound"]
+	settings["music"] = bool(settings["music"])
+	settings["quality"] = _quality_name(str(settings["quality"]))
 	settings["difficulty"] = clampi(int(settings["difficulty"]), 0, 2)
 	clean["settings"] = settings
 	var stats: Dictionary = _defaults()["stats"]
@@ -128,13 +131,13 @@ func save_profile() -> bool:
 	var parent := ProjectSettings.globalize_path(save_path).get_base_dir()
 	var mkdir_error := DirAccess.make_dir_recursive_absolute(parent)
 	if mkdir_error != OK and mkdir_error != ERR_ALREADY_EXISTS:
-		last_error = "Não foi possível criar diretório do save."
+		last_error = "Could not create the save directory."
 		return false
 	# Write and flush first, then atomically rename. Last valid primary becomes backup.
 	var temporary := save_path + ".tmp"
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
-		last_error = "Não foi possível abrir o save temporário."
+		last_error = "Could not open the temporary save file."
 		return false
 	data["version"] = SAVE_VERSION
 	file.store_string(JSON.stringify(data, "\t"))
@@ -144,7 +147,7 @@ func save_profile() -> bool:
 	if not valid_existing.is_empty():
 		var copy_error := DirAccess.copy_absolute(save_path, save_path + ".bak")
 		if copy_error != OK:
-			last_error = "Não foi possível preservar o backup do save."
+			last_error = "Could not preserve the save backup."
 			return false
 	elif not last_error.is_empty():
 		# Never clobber a save from a future version.
@@ -152,7 +155,7 @@ func save_profile() -> bool:
 		return false
 	var error := DirAccess.rename_absolute(temporary, save_path)
 	if error != OK:
-		last_error = "Não foi possível confirmar o save: " + str(error)
+		last_error = "Could not commit the save file: " + str(error)
 		return false
 	return true
 
@@ -274,13 +277,21 @@ func achievements() -> Array:
 		all.append(item)
 	return all
 
+func _quality_name(value: String) -> String:
+	# Saved v1 values are accepted only as migration aliases, never displayed.
+	var legacy := {"Baixo": "Low", "Médio": "Medium", "Alto": "High"}
+	var canonical: String = legacy.get(value, value)
+	return canonical if ["Auto", "Low", "Medium", "High"].has(canonical) else "Auto"
+
 func set_setting(key: String, value: Variant) -> bool:
 	if not data["settings"].has(key):
 		return false
-	if key == "sound" and not value is bool:
+	if key in ["sound", "music"] and not value is bool:
 		return false
-	if key == "quality" and not ["Auto", "Baixo", "Médio", "Alto"].has(value):
-		return false
+	if key == "quality":
+		if not value is String or not ["Auto", "Low", "Medium", "High", "Baixo", "Médio", "Alto"].has(value):
+			return false
+		value = _quality_name(value)
 	if key == "difficulty" and (not (value is int or value is float) or int(value) < 0 or int(value) > 2):
 		return false
 	var previous: Variant = data["settings"][key]

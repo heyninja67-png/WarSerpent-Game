@@ -1,0 +1,8 @@
+{
+  "backend": "X11",
+  "draw_command_mean_us": 732.272222222222,
+  "draw_command_p95_us": 857.0,
+  "frames": 180,
+  "segments_each": 40,
+  "snakes": 10
+}

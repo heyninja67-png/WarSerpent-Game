@@ -1,0 +1,50 @@
+--- client-host.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: host HUD caches the actual room port and LAN connection hint
+PASS: server accepted real remote human
+PASS: server accepted rate-limited input packets
+PASS: server awarded food to remote player
+PASS: server applied remote skill request and cooldown
+NETWORK host: 6 checks, 0 failures
+
+--- client.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: client handshake assigns distinct authoritative snake
+PASS: client receives ongoing authoritative snapshots
+PASS: client sends steering inputs
+PASS: remote steering produces visible synchronized motion
+PASS: server preserves selected skin and nickname
+PASS: food growth and ability cooldown synchronize from host
+PASS: real initial food data synchronized
+NETWORK client: 8 checks, 0 failures
+
+--- disconnect-host.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: host HUD caches the actual room port and LAN connection hint
+PASS: server accepted real remote human
+PASS: server accepted rate-limited input packets
+PASS: server awarded food to remote player
+PASS: server applied remote skill request and cooldown
+NETWORK host: 6 checks, 0 failures
+
+--- disconnect.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: connection failure returns honest network error without match rewards
+NETWORK disconnect: 2 checks, 0 failures
+
+--- unreachable.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: connection failure returns honest network error without match rewards
+NETWORK unreachable: 2 checks, 0 failures
+
+MULTIPLAYER PASS: real two-process UDP movement, food, cooldowns, host disconnect and timeout; logs=/tmp/warserpent-network-34xnw71r

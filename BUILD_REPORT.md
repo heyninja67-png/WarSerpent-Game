@@ -1,125 +1,96 @@
-# War Serpent.io — relatório de desenvolvimento e compilação
+# War Serpent.io 1.1.0 — relatório da atualização
 
-Data: 24 de outubro de 2026. Estúdio: **Emnio**. Versão **1.0.0**, código **1**.
+Estúdio: Emnio. Application ID: `com.emnioggs.warserpent`. Versão 1.1.0, version code 2.
 
-## Resultado
+## Entrega
 
-Foi criado e executado um jogo Godot 2D offline com fluxo completo, e foi realmente gerado um APK Android de desenvolvimento. Não é um APK vazio nem uma aplicação HTML. O código completo, cenas, assets originais, testes e ferramentas de compilação estão no ZIP open source.
+APK Android nativo realmente exportado em **modo release otimizado**, assinado com a **mesma identidade de desenvolvimento da versão 1.0.0**. O nome local `builds/WarSerpentIO-debug.apk` é mantido por compatibilidade das ferramentas; não indica o modo interno da exportação. A release pública usa `WarSerpentIO-v1.1.0.apk`.
 
-- APK: `builds/WarSerpentIO-debug.apk`.
-- Fontes: `builds/WarSerpentIO-Source.zip`.
+Instale por cima da versão anterior para preservar os dados; não desinstale primeiro. Assinatura e migração dos saves foram verificadas separadamente. A instalação de atualização em um aparelho não foi testada, pois não há dispositivo conectado.
+
+- APK e fontes: pasta `builds/` e GitHub Releases.
+- Assinatura, hash, tamanho, manifesto e payload exatos: [docs/apk_validation.txt](docs/apk_validation.txt).
 - Instruções: [README.md](README.md).
-- Package: **com.emnioggs.warserpent**.
-- Tela: horizontal, canvas 1280×720 com preservação de proporção.
-- Compatibilidade declarada: Android 7/API 24+, ARM64/ARMv7, OpenGL ES 3. Target API 36.
-- SHA-256 e tamanho final do APK: [docs/apk_validation.txt](docs/apk_validation.txt). Checksums da entrega: `builds/SHA256SUMS`.
+- Engine: Godot 4.6.3 oficial, GL Compatibility, Android API24+, ARM64/ARMv7, target API36.
+- Servidor público: nenhum. O usuário escolheu conexão direta.
 
-Compilar, verificar a assinatura e executar em desktop não comprova instalação ou funcionamento em todos os aparelhos Android. Não havia aparelho ou emulador conectado.
+## Mudanças solicitadas e implementadas
 
-## Ferramentas e decisão de engine
-
-| Ferramenta | Versão / uso |
+| Pedido | Resultado |
 |---|---|
-| Godot | 4.6.3 stable, revisão oficial 7d41c59c4 |
-| Renderer | GL Compatibility |
-| Java | OpenJDK runtime 21.0.12.1; java e keytool existentes |
-| Build Tools Android | 35.0.1: aapt, apksigner, zipalign |
-| SDK Platform | API 35, revisão 2, local |
-| Template Android Godot | 4.6.3 oficial; binário pré-compilado com min24/target36 |
-| Platform Tools | 37.0.1, adb 1.0.41 |
-| Execução renderizada | Xvfb + Mesa llvmpipe, desktop Linux |
+| Reduzir travamentos | Corpo com histórico circular, spatial hashing sem dicionário por segmento, consultas locais de IA, MultiMesh para comida/corpos, cache de HUD/ranking/sons, orçamento Auto conservador no Android e engine em modo release |
+| Cobra inicial pequena | 10 segmentos iniciais e massa36, comparados a33 segmentos na v1.0; crescimento e boost continuam reais |
+| Música e mais efeitos | Duas composições synthwave originais de45,18s, menu/arena, loop contínuo;14 WAVs no total, controles de música e efeitos independentes |
+| Interface em inglês | Menu, coleção, loja, habilidades, missões, conquistas, ajustes, resultados e HUD em inglês; nomes escolhidos pelo jogador são preservados |
+| Mensagem de morte | Derrota normal agora mostra **ELIMINATED**, sem alegar perda de conexão |
+| UI mais bonita/animada | Menu reorganizado, materiais de botões/painéis novos, hover/toque, logo flutuante, prévia animada, transições e coleção paginada |
+| Mais cobras | Solar Wyrm, Neon Samurai e Toxic Fang, com arte distinta e poderes reais; oito skins ao todo |
+| Tela até as bordas | Canvas expandido, fundo cobrindo viewport, conteúdo seguro centralizado, imersão e edge-to-edge Android habilitados |
+| Abertura melhor | Marca EMNIO redesenhada, símbolo/wordmark animados e transição curta; sem frases, slogans ou contadores de carregamento |
+| Remover logo Godot | Desativada a imagem padrão de boot da engine; ícones nativos personalizados verificados. A splash de sistema Android12+ não pode ser totalmente eliminada e usa a marca do app |
+| Modo online | ENet real: criar sala e entrar por endereço/porta, host autoritativo, até4 jogadores humanos; sem matchmaking público fictício |
+| Preservar progresso | Save versão2 migra inventário, saldo, XP, recordes, nomes e configurações da v1 |
 
-O SDK não estava nas variáveis ou diretórios pesquisados, embora a solicitação presumisse sua existência. Apenas componentes ausentes foram instalados em `/workspace/toolchains`. O Godot já estava disponível. Templates foram obtidos da versão oficial e verificados por SHA-512; arquivos Google foram verificados contra checksums oficiais. TLS e verificação de integridade permaneceram ativos.
+## Otimização: comparação com carga equivalente
 
-A exportação direta com templates Android funciona sem Gradle, `javac`, NDK ou compilação da engine. O Java existente foi suficiente. O target36 vem do template pré-compilado; as ferramentas35.0.1 foram aceitas e o manifesto final foi inspecionado. Fontes e detalhes: [toolchain_notes.md](docs/toolchain_notes.md), [sdk_notes.md](docs/sdk_notes.md).
+Baseline: código anterior, commit `750f8ca`. Comparação controlada:10 cobras com40 segmentos cada e1000 energias; testes Linux no mesmo servidor. A redução da densidade padrão não foi usada para inflar essa comparação.
 
-## Sistemas implementados
+| Medição | Antes | Depois | Redução aproximada |
+|---|---:|---:|---:|
+| Movimento/corpo40segmentos |43,88µs|20,19µs|54%|
+| Reconstrução do grid de corpos |217,27µs|120,40µs|45%|
+| Decisão da IA |94,05µs|15,67µs|83%|
+| Passo da arena |1079,80µs|494,89µs|54%|
+| Preparação CPU de comandos de desenho |3,745ms|0,732ms|80%|
 
-| Sistema | Implementação entregue |
-|---|---|
-| Inicialização | Splash Emnio com pulso e passagem de serpente; marca do jogo; progresso de tarefas reais de carregamento |
-| Menu | Cobra equipada animada, nome, nível, XP, moedas/gemas, seleção de dificuldade e todas as telas de navegação funcionais |
-| Movimento | Direção contínua 360°, limite de giro, histórico interpolado por distância, crescimento e corpo contínuo com sprites |
-| Arena | Neon City 2800×2800, piso, energia, borda letal, câmera com zoom suave |
-| Boost | Velocidade aumentada, consumo de massa, energia descartada, feedback visual e sonoro |
-| Colisão | Cabeça/corpo, cabeça/cabeça, imunidade de entrada, escudo consumível; borda sempre letal |
-| IA | Busca de energia, desvio de ameaças/bordas, decisão de perseguição/fuga, boost e poderes, três dificuldades |
-| Habilidades | Volt: velocidade; Inferno: lentidão próxima; Frost: trilha lenta; Cyber: absorção de colisão; Shadow: proteção espectral finita |
-| HUD | Joystick, boost, habilidade/cooldown, score, comprimento, eliminações, tempo e classificação contra bots |
-| Partida | Pausa, derrota animada, energia liberada, resultados, recompensas, reinício e retorno ao menu |
-| Economia | Coins, gems, fragments; compras de skins com confirmação e saldo real; inventário e equipamento |
-| Progressão | XP/nível, quatro missões, quatro conquistas, caixa diária com bloqueio de duplicação |
-| Save | JSON versionado, escrita atômica, backup, recuperação e proteção de versões futuras |
-| Configurações | Som, qualidade e dificuldade; nome editável; créditos/licença Godot acessíveis no APK |
+Detalhes, método e limites: [docs/PERFORMANCE_V1_1.md](docs/PERFORMANCE_V1_1.md). Esses números **não são FPS em Android**. O desenho foi exercitado com Xvfb/Mesa llvmpipe; não há medição de GPU, memória, temperatura ou bateria em celular.
 
-Cinco skins entregues: **Volt Serpent, Inferno Viper, Frost Fang, Cyber Reaper, Shadow Phantom**. Raridades em uso: Comum, Incomum, Rara, Épica e Lendária. Durações e cooldowns reais estão alinhados com `data/catalog.json`.
+Auto no Android escolhe o orçamento Low/30FPS alvo:5bots e420energias. Medium usa7/650; High9/1000. Física permanece60Hz para resposta e movimento suaves. A meta de30/60FPS não é uma garantia de desempenho de aparelhos. A comida mantém brilho com um único sprite em batch; corpos também são instanciados em lotes.
 
-O perfil começa com 500 coins. A carga diária concede 75 coins, 3 gems e 2 fragments uma vez por dia UTC. Coins compram skins; gems/fragments são contabilizados, sem mercado próprio nesta versão. Não há pagamentos, anúncios, servidores, multiplayer ou ranking online.
+## Testes executados
 
-## Arte, áudio e licenciamento
+Comando: `./tools/test.sh`. Saída completa: [docs/test-results.txt](docs/test-results.txt).
 
-Foram produzidos 42 PNGs próprios, incluindo logos, ícone Android, cinco conjuntos de cabeça/corpo/cauda, UI, joystick, poderes, baú, moedas, arena e efeitos. O fundo original foi gerado com a ferramenta de geração de imagens disponível. A integração Adobe não estava disponível nesta sessão.
+| Suíte | Verificações | Resultado |
+|---|---:|---|
+| Perfil/economia/migração |79|Aprovadas, zero falhas|
+| Movimento/crescimento/8poderes/IA/colisões |46|Aprovadas, zero falhas|
+| Fluxo real de UI/gameplay/controles |119|Aprovadas, zero falhas|
+| Rede, dois processos OS/UDP real |24|Aprovadas, zero falhas|
+| **Total** |**268**|**Zero falhas**|
 
-Há sete WAVs sintetizados: toque, coleta, boost, habilidade, derrota, desbloqueio e ambiente. A reprodução foi exercitada pela engine com driver Dummy no servidor; não houve avaliação auditiva por dispositivo de saída.
+A integração verifica oito skins/paginação/filtros/compras, áudio independente, boot sem frases, inglês, créditos, host/join reais, toque simultâneo pelo dispatcher, pausa, derrota, reinício, save e layouts1280×720/1600×720/1280×900. Ela detectou e confirmou correções de pausa duplicada por mouse emulado e callback de notificação após troca de tela.
 
-Código: MIT. Arte autoral e áudio: CC0 conforme [assets/LICENSE.md](assets/LICENSE.md). Fontes DejaVu têm sua licença preservada. A licença Godot está em [THIRD_PARTY.md](docs/THIRD_PARTY.md) e acessível na tela de créditos. Não foram usados assets de Slither.io/Snake.io.
+Os testes de rede usam um cliente com a cena real `Main.tscn` e um host em processo separado, validando caminhos RPC compatíveis com o app/servidor headless. Verificam atribuição, movimento, comida, crescimento, habilidade/cooldown, encerramento do host e timeout. Snapshots comprimidos são fragmentados em blocos de950bytes, com interpolação no cliente e deltas de comida. Log: [docs/network-validation.txt](docs/network-validation.txt).
 
-## Testes efetivamente executados
+Quatro capturas reais do framebuffer atualizadas em [docs/screenshots](docs/screenshots). Nenhum erro de script ou vazamento na captura final; há apenas aviso de V-Sync não suportado pelo driver virtual. Áudio foi decodificado e analisado sem clipping/NaN/Inf; não houve avaliação auditiva em aparelho.
 
-Comando: `./tools/test.sh`. Os testes usam diretórios temporários isolados e preservam o código de saída dos processos.
-
-| Suíte | Resultado | Evidência |
-|---|---|---|
-| Perfil/economia | 45 verificações, zero falhas | Compras, propriedade, saldo, XP, missões, caixa diária, backup e saves |
-| Gameplay | 34 verificações, zero falhas | Movimento, espaçamento, crescimento, massa, cinco poderes, cooldowns, colisões e IA |
-| Integração | 79 verificações, zero falhas | Fluxo completo, navegação, compra, licença, inputs simultâneos, morte, resultados, reinício e persistência |
-| Simulação prolongada | Cinco skins, 6.571 passos, zero falhas | [gameplay_validation.md](docs/gameplay_validation.md) |
-| Renderização real desktop | Quatro capturas 1280×720, saída 0 | [screenshots](docs/screenshots/) |
-
-**Total das três suítes: 158 verificações aprovadas.** Log: [test-results.txt](docs/test-results.txt). A simulação medida no servidor consumiu cerca de 0,964 ms por passo; isso não representa FPS Android.
-
-Os toques foram injetados pelo dispatcher real `Input.parse_input_event` com transformação de coordenadas, incluindo joystick, boost e poder simultâneos. Não são testes de touchscreen físico.
-
-As capturas foram obtidas do framebuffer Godot, não montagens de UI. A inspeção corrigiu textos que ultrapassavam cards. O encerramento renderizado foi validado sem vazamentos de objetos/recursos após liberar os streams e aguardar o mixer. O driver virtual informa que não pode alterar V-Sync; esse aviso não é erro de script.
-
-## Compilação Android e verificação do pacote
+## Compilação e verificação Android
 
 ```sh
 ./tools/setup_android.sh
 ./tools/build_android.sh
+python3 tools/validate_android.py
+python3 tools/package_source.py
 ```
 
-O helper importa recursos e executa:
+O helper usa o template **release** oficial, com checksum verificado, e a chave local original fora do projeto. Depois corrige o defeito conhecido de authorities duplicadas do AndroidX no exportador Godot4.6.3, realinha, assina e verifica o APK. O certificado deve coincidir com a v1.0; o build é recusado se a identidade mudar ou se o APK for debuggable.
 
-```sh
-godot --headless --path . --export-debug Android builds/WarSerpentIO-debug.apk
-```
+Além das268 verificações de lógica/fluxo/rede, passaram58 verificações sobre recursos extraídos do APK real. Verificações independentes: assinatura v2/v3, package/versão, launcher, orientação, INTERNET como permissão necessária ao multiplayer, providers distintos, CRC, código compilado, catálogo/8skins, duas músicas, fontes/licenças, configuração de boot/fullscreen, bibliotecas release e alinhamento16KB ARM64. Detalhes: [apk_validation.txt](docs/apk_validation.txt) e [toolchain notes](docs/toolchain_notes.md).
 
-Depois corrige uma duplicação de autoridades de providers produzida pelo exportador direto Godot4.6.3, alinha e assina novamente com a chave local de desenvolvimento. A correção AXML é limitada ao provider AndroidX: testa package, semântica, idempotência, CRC e igualdade dos demais payloads. Não altera código do jogo nem desativa verificação de assinatura.
+Sem Gradle/javac/NDK: exportação com template pré-compilado. Java/keytool existentes, Build Tools35.0.1, Platform Tools37.0.1; template target36. Não foram substituídas ferramentas globais e verificação TLS/checksums permaneceu ativa.
 
-Validações executadas com as ferramentas Android e análise ZIP/ELF:
+## Limitações restantes
 
-- APK existente, tamanho plausível, CRCs válidos e DEX executável.
-- Manifesto binário legível; package, label, versão, orientação, SDKs e providers verificados.
-- Scripts GDScript compilados, cena principal, catálogo JSON e recursos importados presentes.
-- Assinaturas v2 e v3 válidas; chave privada fora do projeto/ZIP.
-- ARM64 e ARMv7 incluídos; `zipalign -c -P 16 4` aprovado.
-- Segmentos ELF ARM64 com alinhamento de 16 KB; sem permissões Android opcionais ou Internet.
+- `adb devices -l` retornou vazio; `/dev/kvm` não está disponível. APK não foi instalado nem executado em Android nesta máquina.
+- Wi-Fi real, touchscreen físico, atualização sobre a instalação anterior e WAN/NAT não foram testados. Conexões diretas pela internet dependem de host e porta UDP acessíveis.
+- Não há servidor público, matchmaking automático, conta, relay, ranking online ou economia autoritativa persistente. Salas confiam no host; se ele sai ou termina a partida, a sala fecha. [docs/ONLINE.md](docs/ONLINE.md).
+- Não é uma publicação Play Store. O modo da engine é release, mas o certificado continua sendo o de desenvolvimento para permitir atualizar a instalação anterior.
+- Permanecem oito skins, uma arena e progressão local. Gems/fragments ainda não possuem mercado próprio; skins/arenas adicionais continuam no roadmap.
+- Medições Android reais e ajustes adicionais para o aparelho que apresentou travamentos continuam necessários; a melhoria de CPU medida não elimina todos os possíveis gargalos de GPU/driver.
 
-O relatório de verificação exato está em [apk_validation.txt](docs/apk_validation.txt). O log completo da exportação é mantido na máquina em `builds/android-build.log`.
+## Fontes e licenças
 
-## Otimização e limites
+ZIP completo com código, dados,59PNG,2OGG,14WAV, cenas, testes, relatórios e helpers. Cache, SDK, templates, saves pessoais e chaves privadas são excluídos. Código MIT; arte/áudio autorais CC0 conforme [assets/LICENSE.md](assets/LICENSE.md); fontes DejaVu e Godot preservam seus avisos próprios.
 
-Há spatial hashing para consulta de comida/corpos, culling de sprites, limite de partículas, energia reaproveitada e histórico de movimento limitado. Baixo reduz objetos/efeitos e limita a meta a 30 FPS. Médio/Alto usam meta de 60; Alto acrescenta brilho. Auto escolhe orçamento pela contagem de CPUs, uma heurística simples, sem medir GPU.
-
-**Não foram medidos FPS, memória, temperatura, consumo de CPU/GPU ou bateria em Android.** Não há garantia de 30/60 FPS em aparelhos. Atlases, pooling adicional e otimização guiada por profiler continuam no roadmap.
-
-Pendências de expansão: skins adicionais, raridades Mítica/Divina, mais arenas, poderes orientados inteiramente por dados, mercado de gems/fragments, acessibilidade e multiplayer. O catálogo atual suporta cinco tipos; chegar a 50+ exige ampliar os limites e a arquitetura, não apenas adicionar nomes ao JSON. Consulte [ROADMAP.md](docs/ROADMAP.md).
-
-## Distribuição e próximos testes
-
-`adb devices -l` foi executado e retornou lista vazia. **Instalação, abertura do APK e teste em Android não foram realizados.** O próximo passo é instalar em um aparelho compatível e validar toque físico, áudio, ciclo de vida e desempenho. O APK é debug; assinatura de produção e publicação em loja não foram realizadas.
-
-O ZIP contém código, assets, cenas, configurações, testes, relatório e licenças. Exclui caches, SDK, templates, saves e chaves privadas. Sua integridade e conteúdo obrigatório são verificados por `tools/package_source.py`. Uma cópia extraída sem cache também passou as 158 verificações; a integração foi repetida após a inclusão final das licenças.
-
-As instruções reutilizáveis `install_script` e `start_skill` foram salvas no rascunho das configurações do ambiente. Isso não publica nem executa o rascunho: para ativá-lo, revise e salve nas configurações do ambiente e publique o ambiente. Nenhuma publicação ou restauração em uma tarefa nova foi afirmada.
+O ZIP foi extraído em um diretório temporário sem caches; imports novos e as119 verificações de fluxo passaram na cópia extraída. Evidência em `docs/source-archive-validation.txt`.

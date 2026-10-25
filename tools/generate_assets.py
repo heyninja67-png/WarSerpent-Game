@@ -172,3 +172,195 @@ for name,c in [('spark','#9cf6ff'),('glow','#9657ff'),('flame','#ffbc58'),('fros
  for r in range(29,0,-1):ell(d,(32-r,32-r,32+r,32+r),col(c,int(120*(1-r/30)**2)))
  ell(d,(28,28,36,36),col(c));save(im,Path(f'particles/{name}.png'))
 print('Authored assets generated: five skins, branding, UI, arena, icons, particles.')
+
+# v1.1: original premium studio identity, tactile UI materials, three new species.
+# These illustrations are authored from vector paths at 3x then antialiased.
+# UI art intentionally keeps typography external for localization.
+def emnio_emblem(d,cx,cy,scale=1.0,white=False):
+ def q(points):return [(cx+x*scale,cy+y*scale) for x,y in points]
+ ink=col('#edf4ff') if white else col('#bd9bff')
+ # Two folded blade shapes describe a continuous angular E / horizon portal.
+ poly(d,q([(-69,-71),(37,-71),(72,-34),(15,-34),(-12,-7),(54,-7),(23,24),(-44,24),(-74,-7),(-41,-40),(5,-40),(-9,-54),(-56,-54)]),ink)
+ poly(d,q([(-44,35),(21,35),(50,6),(74,31),(34,71),(-7,71),(-29,49),(-67,49)]),col('#f1f7ff'))
+ # Small detached signal shard is the recognizable brand accent.
+ poly(d,q([(58,-71),(81,-48),(68,-35),(45,-58)]),col('#6ce9f0'))
+
+im,d=canvas(1000,380)
+emnio_emblem(d,145,179,1.34)
+# Custom geometric wordmark, each letter is individually authored.
+letters={
+'E': [[(0,0),(70,0),(70,15),(18,15),(18,37),(60,37),(60,52),(18,52),(18,75),(70,75),(70,90),(0,90)]],
+'M': [[(0,90),(0,0),(19,0),(44,42),(69,0),(88,0),(88,90),(71,90),(71,28),(44,71),(17,28),(17,90)]],
+'N': [[(0,90),(0,0),(17,0),(57,62),(57,0),(75,0),(75,90),(58,90),(18,28),(18,90)]],
+'I': [[(0,0),(18,0),(18,90),(0,90)]],
+'O': [[(15,0),(65,0),(80,15),(80,75),(65,90),(15,90),(0,75),(0,15)],[(20,17),(17,20),(17,70),(20,73),(60,73),(63,70),(63,20),(60,17)]]}
+x=300
+for char in 'EMNIO':
+ shapes=letters[char]
+ poly(d,[(x+u*1.35,111+v*1.35) for u,v in shapes[0]],col('#f1f6ff'))
+ if char=='O':poly(d,[(x+u*1.35,111+v*1.35) for u,v in shapes[1]],(0,0,0,0))
+ x+= (max(pt[0] for pt in shapes[0])+30)*1.35
+# restrained label with generous tracking
+small=ImageFont.truetype(str(A/'fonts/Body.ttf'),17*S)
+d.text((302*S,260*S),'I N D E P E N D E N T   G A M E S',font=small,fill=col('#97a4be'))
+line(d,[(302,291),(423,291)],col('#9c78d4'),2)
+save(im,Path('branding/emnio.png'))
+im,d=canvas(512,512)
+emnio_emblem(d,256,256,2.42)
+save(glow(im),Path('branding/emnio_symbol.png'))
+# wide white wordmark for future high-contrast placements
+im,d=canvas(1000,190)
+x=105
+for char in 'EMNIO':
+ shapes=letters[char]
+ poly(d,[(x+u*1.65,20+v*1.65) for u,v in shapes[0]],col('#f2f7ff'))
+ if char=='O':poly(d,[(x+u*1.65,20+v*1.65) for u,v in shapes[1]],(0,0,0,0))
+ x+=(max(pt[0] for pt in shapes[0])+29)*1.65
+save(im,Path('branding/emnio_wordmark.png'))
+
+# Tactile dark metal buttons: quiet surfaces, inset illumination and asymmetric cuts.
+def material_asset(name,accent,kind='button',state='normal'):
+ w,h=(512,128) if kind=='button' else (512,256)
+ im,d=canvas(w,h)
+ ac=col(accent)
+ silhouette=[(18,5),(w-29,5),(w-5,29),(w-5,h-20),(w-20,h-5),(5,h-5),(5,18)]
+ poly(d,[(x,y+3) for x,y in silhouette],col('#010610',210))
+ poly(d,silhouette,col('#17273b') if state!='hover' else col('#243a50'))
+ # The inner material is a subtle monochrome bevel, not an outer wireframe.
+ inner=[(20,9),(w-31,9),(w-10,31),(w-10,h-22),(w-22,h-10),(10,h-10),(10,21)]
+ poly(d,inner,col('#0e2033') if state!='pressed' else col('#081321'))
+ if kind=='button':
+  for y in range(12,h-12):
+   r=.68+.32*(1-y/h)
+   if state=='hover':base=(28,64,81)
+   elif state=='pressed':base=(9,20,31)
+   else:base=(17,37,53)
+   line(d,[(20,y),(w-34,y)],tuple(int(v*r) for v in base)+(255,),1)
+  poly(d,[(9,21),(18,12),(22,12),(22,h-11),(10,h-11)],ac)
+  poly(d,[(27,16),(w-35,16),(w-26,25),(27,25)],col('#bce7f4',20 if state=='normal' else 45))
+  # Three bright hardware segments make the action location recognizable.
+  for i in range(3):poly(d,[(w-62+i*11,51),(w-55+i*11,58),(w-62+i*11,65),(w-58+i*11,65),(w-51+i*11,58),(w-58+i*11,51)],ac)
+  line(d,[(30,h-16),(w-32,h-16)],col('#02101d'),2)
+  if state=='hover':line(d,[(28,h-11),(w-30,h-11)],ac,2)
+ else:
+  # A soft upper reflection and a recessed lower material anchor content.
+  poly(d,[(12,22),(24,10),(w-32,10),(w-17,25),(w-17,40),(12,40)],col('#d1e5ff',12))
+  line(d,[(25,11),(102,11)],ac,3)
+  line(d,[(w-84,h-11),(w-28,h-11)],col('#617b98'),2)
+  poly(d,[(11,48),(14,48),(14,h-38),(11,h-38)],col('#57718e',70))
+ save(im,Path(f'ui/{name}.png'))
+for n,c in [('button','#57e5ed'),('button_alt','#be99fa')]:material_asset(n,c)
+material_asset('button_hover','#97fcff',state='hover')
+material_asset('button_pressed','#58b9c8',state='pressed')
+material_asset('panel','#7d9cbd','panel')
+material_asset('card','#a090dc','panel')
+
+newpalettes=[('#ffd978','#bc6d22','#382819','#fff8dd'),('#f1f5fa','#8a9baa','#202831','#ff5968'),('#bdff47','#56922b','#152a27','#f5ffa2')]
+for k,palette in enumerate(newpalettes,5):
+ b,m,z,a=map(col,palette)
+ im,d=canvas(96,76)
+ if k==5:
+  # Solar wyrm: a radial sun mane and broad imperial muzzle.
+  for i,ang in enumerate(range(105,256,25)):
+   theta=math.radians(ang);theta2=math.radians(ang+10)
+   p1=(34+22*math.cos(theta),38+22*math.sin(theta))
+   p2=(34+37*math.cos(theta2),38+37*math.sin(theta2))
+   p3=(34+22*math.cos(theta+.3),38+22*math.sin(theta+.3))
+   poly(d,[p1,p2,p3],m,b)
+  ell(d,(11,15,56,62),z,b,2)
+  ell(d,(17,21,49,56),m,a,1)
+  poly(d,[(29,22),(62,20),(78,30),(92,39),(88,50),(61,58),(31,52)],z,b)
+  poly(d,[(37,26),(61,24),(76,32),(63,36),(44,33)],m)
+  poly(d,[(35,42),(57,38),(83,43),(74,52),(48,51)],m)
+  poly(d,[(58,30),(75,33),(65,39),(58,37)],a)
+  line(d,[(70,46),(87,43)],col('#552e1b'),2)
+  poly(d,[(42,22),(49,9),(56,23)],b,a)
+  line(d,[(25,26),(30,34),(25,43),(32,51)],a,2)
+ elif k==6:
+  # Samurai: swept kabuto helmet, white ceramic face, red lacquer jaw.
+  poly(d,[(6,28),(18,10),(42,7),(64,19),(78,28),(70,39),(16,48)],z,b)
+  poly(d,[(15,23),(4,2),(31,14),(42,0),(48,18),(66,7),(65,28)],m,b)
+  poly(d,[(16,27),(43,19),(68,30),(63,42),(21,46)],b)
+  poly(d,[(27,42),(65,31),(90,37),(94,45),(80,55),(51,60),(20,54)],z,m)
+  poly(d,[(34,44),(65,37),(82,40),(76,46),(53,51)],b)
+  poly(d,[(23,52),(57,53),(78,48),(84,56),(58,65),(28,61)],a)
+  poly(d,[(59,32),(73,35),(64,40),(57,39)],a)
+  line(d,[(25,29),(36,29)],a,3)
+  line(d,[(27,35),(40,35)],col('#111923'),2)
+  ell(d,(13,43,23,53),col('#232c39'),a,2)
+  line(d,[(48,56),(63,55),(73,51)],col('#fff3f3'),1)
+ else:
+  # Venomous cobra: a real broad bioluminescent hood and narrow fanged jaw.
+  poly(d,[(13,6),(37,9),(53,23),(56,52),(35,70),(8,64),(1,39)],z,b)
+  poly(d,[(16,15),(29,15),(42,29),(40,54),(24,62),(10,52),(7,34)],m)
+  ell(d,(14,24,32,49),z,b,2)
+  ell(d,(19,29,27,43),a)
+  poly(d,[(31,28),(54,23),(72,29),(91,38),(89,47),(78,52),(51,53),(32,47)],z,b)
+  poly(d,[(34,29),(55,26),(72,32),(78,37),(55,36),(44,40)],m)
+  poly(d,[(45,43),(59,39),(78,42),(84,46),(63,49)],m)
+  poly(d,[(58,30),(73,33),(65,39),(58,37)],a)
+  line(d,[(67,45),(83,43)],col('#050e0a'),2)
+  poly(d,[(74,46),(76,57),(80,46)],a)
+  poly(d,[(84,49),(88,53),(86,58),(82,55)],b)
+  for x,y in((40,31),(48,45),(55,29)):ell(d,(x,y,x+2,y+2),a)
+ save(glow(im),Path(f'snakes/head_{k}.png'))
+ im,d=canvas(64,64)
+ if k==5:
+  ell(d,(0,7,64,57),z,b,2)
+  for x in(-4,18,40):
+   poly(d,[(x,31),(x+15,9),(x+29,31),(x+15,55)],m,b)
+   poly(d,[(x+10,24),(x+15,14),(x+20,24),(x+17,33)],a)
+  line(d,[(0,33),(64,33)],col('#ed9d36'),2)
+ elif k==6:
+  ell(d,(0,8,64,56),z,m)
+  for x in(-8,15,38):
+   poly(d,[(x,14),(x+23,10),(x+30,27),(x+23,52),(x,49),(x+6,31)],b,m)
+   poly(d,[(x+4,20),(x+21,17),(x+24,25),(x+8,28)],col('#ffffff'))
+   line(d,[(x+7,35),(x+22,34)],a,3)
+   line(d,[(x+9,42),(x+20,41)],z,2)
+  line(d,[(0,30),(64,30)],z,2)
+ else:
+  ell(d,(0,5,64,59),z,b)
+  for x in(-5,17,39):
+   for y in(17,41):poly(d,[(x,y),(x+11,y-9),(x+23,y),(x+11,y+11)],m,b)
+  for x in(10,32,54):
+   ell(d,(x-4,26,x+4,36),z,a)
+   ell(d,(x-1,29,x+1,32),a)
+ save(glow(im),Path(f'snakes/body_{k}.png'))
+ im,d=canvas(96,64)
+ if k==5:
+  poly(d,[(94,9),(94,55),(57,49),(21,38),(3,32),(29,22),(57,16)],z,b)
+  for x in(29,48,69):poly(d,[(x,31),(x+17,18),(x+20,43)],m,b)
+  poly(d,[(16,29),(37,20),(28,33),(37,44)],a)
+ elif k==6:
+  poly(d,[(94,8),(94,56),(57,49),(9,32),(58,15)],z,m)
+  poly(d,[(89,13),(89,29),(38,31),(62,19)],b)
+  poly(d,[(89,34),(89,50),(62,43),(38,33)],a)
+  for x in(57,73):line(d,[(x,20),(x-5,32),(x,45)],m,2)
+ else:
+  poly(d,[(94,8),(94,56),(63,49),(29,41),(3,32),(29,24),(64,15)],z,b)
+  poly(d,[(94,16),(94,29),(21,32),(62,23)],m)
+  for x in(36,54,72):ell(d,(x,28,x+6,36),a)
+ save(glow(im),Path(f'snakes/tail_{k}.png'))
+ im,d=canvas(128,128)
+ poly(d,[(34,6),(94,6),(122,34),(122,94),(94,122),(34,122),(6,94),(6,34)],z,b)
+ if k==5:
+  # Solar polarity magnet, expanding orbital field.
+  ell(d,(23,23,105,105),None,m,2)
+  ell(d,(32,32,96,96),None,b,2)
+  line(d,[(45,43),(45,69),(51,83),(76,83),(83,69),(83,43)],b,12)
+  line(d,[(45,40),(45,52)],a,12);line(d,[(83,40),(83,52)],a,12)
+ elif k==6:
+  # Katana dash.
+  poly(d,[(32,98),(43,72),(88,25),(101,20),(96,34),(53,81)],b,a)
+  line(d,[(36,70),(56,89)],a,5)
+  line(d,[(23,45),(56,45)],a,3);line(d,[(18,59),(44,59)],a,2)
+  line(d,[(66,93),(96,93)],b,3)
+ else:
+  # Venom droplet with warning-fang center.
+  poly(d,[(64,20),(97,67),(95,87),(81,103),(49,103),(33,87),(31,67)],m,b)
+  poly(d,[(46,67),(57,71),(52,87)],a)
+  poly(d,[(72,71),(83,67),(77,87)],a)
+  line(d,[(47,53),(57,46)],a,2)
+ save(glow(im),Path(f'icons/ability_{k}.png'))
+print('v1.1 assets: refined EMNIO brand, tactile metal UI, 8 distinct skin sets.')

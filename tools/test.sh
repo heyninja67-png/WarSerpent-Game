@@ -13,4 +13,5 @@ cd "$PROJECT_ROOT"
 for suite in test_profile test_gameplay test_flow; do
     "$GODOT" --headless --path "$PROJECT_ROOT" --script "tests/$suite.gd" 2>&1 | tee "$WARSERPENT_TEST_ROOT/$suite.log"
 done
+python3 tools/test_network.py
 printf 'Logs da execução: %s\n' "$WARSERPENT_TEST_ROOT"

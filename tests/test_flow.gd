@@ -1,11 +1,10 @@
 extends SceneTree
-## Real SceneTree integration; isolated user data is enforced by the launcher.
-## Run: XDG_DATA_HOME=/tmp/warserpent-flow godot --headless --path . --script tests/test_flow.gd
+## Real scene integration. User data must be isolated with XDG_DATA_HOME.
+## godot --headless --audio-driver Dummy --path . --script tests/test_flow.gd
 
 var passed := 0
 var failed := 0
 var app: Control
-var restart_profile: RefCounted
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -21,6 +20,8 @@ func check(condition: bool, description: String) -> void:
 func descendants(node: Node, type_name: String) -> Array:
 	var result: Array = []
 	for child in node.get_children():
+		if child.is_queued_for_deletion():
+			continue
 		if child.is_class(type_name):
 			result.append(child)
 		result.append_array(descendants(child, type_name))
@@ -30,7 +31,7 @@ func find_button(caption: String, under: Node = null) -> Button:
 	if under == null:
 		under = app
 	for item in descendants(under, "Button"):
-		if item.text == caption and not item.is_queued_for_deletion():
+		if item.text == caption:
 			return item
 	return null
 
@@ -41,200 +42,305 @@ func press(caption: String, under: Node = null) -> bool:
 		found.pressed.emit()
 	return found != null
 
-func all_buttons_in_canvas(canvas_size: Vector2 = Vector2(1280,720)) -> bool:
+func has_label(text: String, node: Node = null) -> bool:
+	if node == null:
+		node = app
+	for label in descendants(node,"Label"):
+		if label.text == text:
+			return true
+	return false
+
+func previews(node: Node) -> Array:
+	var result: Array = []
+	for control in descendants(node,"Control"):
+		if control.get_script() == load("res://scripts/ui/SerpentPreview.gd"):
+			result.append(control)
+	return result
+
+func controls_in_view() -> bool:
+	var viewport_size: Vector2 = root.get_visible_rect().size
 	for item in descendants(app.screen, "Button"):
-		if item.is_queued_for_deletion():
-			continue
 		var rect: Rect2 = item.get_global_rect()
-		if rect.position.x < 0 or rect.position.y < 0 or rect.end.x > canvas_size.x + 1 or rect.end.y > canvas_size.y + 1:
-			print("OUTSIDE: ", item.text, " ", rect)
+		if rect.position.x < -1 or rect.position.y < -1 or rect.end.x > viewport_size.x+1 or rect.end.y > viewport_size.y+1:
+			print("OUTSIDE: ", item.text, " ", rect, " viewport ", viewport_size)
 			return false
+	return true
+
+func english_page() -> bool:
+	for label in descendants(app.screen,"Label") + descendants(app.screen,"Button"):
+		var value: String = label.text.to_lower()
+		for phrase in ["jogar", "moedas", "resgatar", "inicializando", "carregando", "conexão perdida", "sinal perdido", "recursos preparados", "eliminação", "configurações", "cobras"]:
+			if value.contains(phrase):
+				print("UNTRANSLATED: ",label.text)
+				return false
 	return true
 
 func touch(index: int, at: Vector2, down: bool) -> void:
 	var event := InputEventScreenTouch.new()
 	event.index = index
-	# Input.parse_input_event accepts physical window coordinates. Headless
-	# windows are64x64, so include the project's stretch/letterbox transform.
+	# Input.parse_input_event accepts physical coordinates, including on a
+	#64px headless window. Apply the project's current stretch transform.
 	event.position = root.get_final_transform() * at
 	event.pressed = down
-	# Inject through Godot's input dispatcher, including the root full-screen
-	# Control and GUI propagation; do not call the arena handler directly.
 	Input.parse_input_event(event)
 
 func run() -> void:
-	var user_dir := OS.get_user_data_dir()
-	if not user_dir.begins_with("/tmp/warserpent-flow"):
-		push_error("Use isolated XDG_DATA_HOME=/tmp/warserpent-flow[-suffix] to protect developer data: " + user_dir)
+	if not OS.get_user_data_dir().begins_with("/tmp/warserpent-flow"):
+		push_error("Protect developer saves: set XDG_DATA_HOME=/tmp/warserpent-flow[-suffix]")
 		quit(2)
 		return
-	for path in ["user://profile.json", "user://profile.json.bak", "user://profile.json.tmp"]:
+	for path in ["user://profile.json","user://profile.json.bak","user://profile.json.tmp"]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(path)
 	seed(913)
 	app = load("res://scenes/Main.tscn").instantiate()
 	root.add_child(app)
 	await process_frame
-	check(app.current_page == "boot", "startup begins with Emnio splash")
-	check(app.boot_active, "resource loading is active")
-	check(app.boot_done <= app.boot_paths.size(), "loading counters reflect actual resource jobs")
-	await create_timer(4.6).timeout
-	check(app.current_page == "menu", "splash/loading reaches menu")
-	check(app.boot_done == app.boot_paths.size() and app.boot_done > 0, "all real resource jobs finish")
-	check(app.profile.catalog.size() == 5, "five skin definitions loaded")
-	check(all_buttons_in_canvas(), "menu controls fit1280x720 canvas")
-	press("COBRAS")
+	check(app.current_page == "boot", "startup begins with custom Emnio splash")
+	check(not ProjectSettings.get_setting("application/boot_splash/show_image"), "engine boot logo is disabled")
+	check(app.boot_logo.texture.resource_path.ends_with("emnio_symbol.png") and app.boot_wordmark.texture.resource_path.ends_with("emnio_wordmark.png"), "first animated splash uses Emnio emblem and wordmark")
+	check(app.boot_active and app.boot_done <= app.boot_paths.size(), "loading counter measures actual resource jobs")
+	check(app.boot_status.text.is_empty() and not app.boot_status.visible, "splash contains no loading status phrases")
+	await create_timer(2.8).timeout
+	check(app.current_page == "menu", "short splash reaches menu")
+	check(app.boot_done == app.boot_paths.size() and app.boot_done == 28, "all24 snake sprite jobs and4 shared resources finish")
+	check(app.profile.catalog.size() == 8, "eight distinct serpent definitions load")
+	check(previews(app.screen).size() == 1,"menu has one animated equipped serpent")
+	check(app.music.stream is AudioStreamOggVorbis and app.music.stream.loop,"menu uses actual looping Ogg music")
+	check(app.music.playing,"menu music plays by default")
+	check(controls_in_view(), "menu controls fit current viewport")
+	check(english_page(),"menu presents English text")
+	press("SERPENTS")
 	await process_frame
 	check(app.current_page == "collection", "collection opens")
-	check(descendants(app.overlay,"SerpentPreview").size() == 0 or descendants(app.overlay,"Control").size() >= 5, "collection populates skin card controls")
-	check(all_buttons_in_canvas(), "collection controls fit canvas")
-	press("150 COINS")
+	check(previews(app.overlay).size() == 4,"collection renders four previews per page")
+	check(previews(app.overlay)[0].skin_id == 0 and previews(app.overlay)[3].skin_id == 3,"first collection page contains skins0 through3")
+	check(controls_in_view(),"first collection page stays inside screen")
+	press("›",app.overlay)
+	await process_frame
+	check(app.collection_page == 1,"next button changes collection page")
+	check(previews(app.overlay).size() == 4 and previews(app.overlay)[0].skin_id == 4 and previews(app.overlay)[3].skin_id == 7,"second page exposes all four additional skins")
+	check(controls_in_view() and english_page(),"second page fits screen and uses English descriptions")
+	press("‹",app.overlay)
+	await process_frame
+	press("150 COINS",app.overlay)
 	await process_frame
 	var dialogs := descendants(app,"ConfirmationDialog")
-	check(dialogs.size() == 1, "buy action opens genuine purchase confirmation")
+	check(dialogs.size() == 1,"purchase opens genuine confirmation dialog")
 	if dialogs.size() == 1:
+		check(dialogs[0].ok_button_text == "UNLOCK" and dialogs[0].cancel_button_text == "CANCEL","purchase confirmation is English")
 		dialogs[0].confirmed.emit()
 	await process_frame
-	check(app.profile.data.owned.has(1), "confirmed purchase grants Inferno skin")
-	check(app.profile.data.coins == 350, "confirmed purchase deducts150 real coins")
-	var equip_buttons: Array = []
-	for item in descendants(app.overlay,"Button"):
-		if item.text == "EQUIPAR":
-			equip_buttons.append(item)
-	check(equip_buttons.size() == 1, "only owned unequipped skin exposes equip action")
-	if equip_buttons.size() == 1:
-		equip_buttons[0].pressed.emit()
+	check(app.profile.data.owned.has(1) and app.profile.data.coins == 350,"confirmed purchase grants skin and deducts150 coins")
+	press("EQUIP",app.overlay)
 	await process_frame
-	check(app.profile.data.equipped == 1, "equip button changes persisted selected skin")
-	press("VOLTAR")
+	check(app.profile.data.equipped == 1,"equip changes persisted selected skin")
+	var filters := descendants(app.overlay,"OptionButton")
+	if not filters.is_empty():
+		filters[0].item_selected.emit(1)
 	await process_frame
-	press("LOJA")
+	check(previews(app.overlay).size() == 2,"Owned filter displays purchased skins only")
+	filters = descendants(app.overlay,"OptionButton")
+	if not filters.is_empty():
+		filters[0].item_selected.emit(2)
 	await process_frame
-	check(app.current_page == "shop", "shop navigation opens market")
-	press("VOLTAR")
+	check(previews(app.overlay).size() == 4 and previews(app.overlay)[0].skin_id == 2,"Locked filter excludes owned skins and paginates remainder")
+	filters = descendants(app.overlay,"OptionButton")
+	if not filters.is_empty():
+		filters[0].item_selected.emit(0)
 	await process_frame
-	press("MISSÕES")
+	press("BACK")
 	await process_frame
-	check(find_button("RESGATAR") != null, "missions expose real reward actions")
+	press("SHOP")
+	await process_frame
+	check(app.current_page == "shop" and english_page(),"shop opens functional English market")
+	press("BACK")
+	await process_frame
+	press("MISSIONS")
+	await process_frame
+	check(find_button("CLAIM") != null and english_page(),"English missions expose real reward actions")
 	var coins_before := int(app.profile.data.coins)
-	press("RESGATAR")
-	check(app.profile.data.coins == coins_before, "unfinished mission cannot pay reward")
-	press("VOLTAR")
+	press("CLAIM")
+	check(app.profile.data.coins == coins_before,"unfinished mission cannot pay reward")
+	press("BACK")
 	await process_frame
-	press("RECOMPENSAS")
+	press("REWARDS")
 	await process_frame
 	coins_before = int(app.profile.data.coins)
 	var gems_before := int(app.profile.data.gems)
 	var fragments_before := int(app.profile.data.fragments)
-	press("ABRIR CARGA")
-	check(app.profile.data.coins == coins_before + 75 and app.profile.data.gems == gems_before + 3 and app.profile.data.fragments == fragments_before + 2, "daily reward pays documented75 coins3 gems2 fragments")
-	press("ABRIR CARGA")
-	check(app.profile.data.coins == coins_before + 75, "daily reward cannot be claimed twice")
-	press("VOLTAR")
+	press("OPEN CRATE")
+	check(app.profile.data.coins == coins_before+75 and app.profile.data.gems == gems_before+3 and app.profile.data.fragments == fragments_before+2,"daily crate pays75 coins3 gems2 fragments")
+	press("OPEN CRATE")
+	check(app.profile.data.coins == coins_before+75,"daily reward cannot be claimed twice")
+	press("BACK")
 	await process_frame
-	press("RANKING")
+	press("RECORDS")
 	await process_frame
-	check(app.overlay != null, "local ranking opens")
-	press("VOLTAR")
+	check(has_label("LOCAL RECORD") and english_page(),"records screen identifies itself as local")
+	press("BACK")
 	await process_frame
-	press("CONQUISTAS")
+	press("ACHIEVEMENTS")
 	await process_frame
-	check(app.profile.achievements().size() == 4, "achievement screen uses four real progress objectives")
-	press("VOLTAR")
+	check(app.profile.achievements().size() == 4 and english_page(),"achievement page shows real English milestones")
+	press("BACK")
 	await process_frame
-	press("AJUSTES")
+	press("SETTINGS")
 	await process_frame
 	var toggles := descendants(app.overlay,"CheckButton")
-	check(toggles.size() == 1, "settings has sound toggle")
-	if toggles.size() == 1:
+	check(toggles.size() == 2,"settings exposes independent SFX and music switches")
+	if toggles.size() == 2:
 		toggles[0].button_pressed = false
-	check(not app.profile.data.settings.sound and not app.music.playing, "sound toggle stops music and persists preference")
+	check(not app.profile.data.settings.sound and app.profile.data.settings.music and app.music.playing,"SFX mute leaves music playing")
+	if toggles.size() == 2:
+		toggles[1].button_pressed = false
+	check(not app.profile.data.settings.music and not app.music.playing,"music switch independently stops music")
+	if toggles.size() == 2:
+		toggles[0].button_pressed = true
+	check(app.profile.data.settings.sound and not app.music.playing,"SFX can be re-enabled while music remains muted")
+	if toggles.size() == 2:
+		toggles[0].button_pressed = false
 	var qualities := descendants(app.overlay,"OptionButton")
-	check(qualities.size() == 1,"graphics quality selector exists")
+	check(qualities.size() == 1,"quality selector exists")
 	if qualities.size() == 1:
 		qualities[0].item_selected.emit(1)
-	check(app.profile.data.settings.quality == "Baixo" and Engine.max_fps == 30,"low quality applies30 FPS target")
-	press("CRÉDITOS E LICENÇAS")
+	check(app.profile.data.settings.quality == "Low" and Engine.max_fps == 30,"Low quality applies30 FPS target")
+	check(controls_in_view() and english_page(),"settings controls fit screen and use English")
+	press("CREDITS & LICENSES")
 	await process_frame
-	var credits_text := descendants(app.overlay,"RichTextLabel")
-	check(credits_text.size() == 1 and "Permission is hereby granted" in credits_text[0].text,"standalone app exposes Godot MIT license and attribution")
-	press("VOLTAR")
+	var credits := descendants(app.overlay,"RichTextLabel")
+	check(credits.size() == 1,"credits opens scrollable license text")
+	if credits.size() == 1:
+		check(credits[0].text.contains("Godot Engine") and credits[0].text.contains("Permission is hereby granted") and credits[0].text.contains("Bitstream"),"credits include Godot and font attribution/license")
+	press("BACK")
 	await process_frame
-	press("PILOTO  /  NV. 1")
+	press("PILOT  /  LV. 1")
 	await process_frame
 	var names := descendants(app.overlay,"LineEdit")
-	check(names.size() == 1, "profile name editor exists")
+	check(names.size() == 1,"profile editor exposes name input")
 	if names.size() == 1:
 		names[0].text = "NOVA TEST"
-	press("SALVAR NOME")
+	press("SAVE NAME")
 	await process_frame
-	check(app.profile.data.name == "NOVA TEST", "profile editor saves name")
-	press("VOLTAR")
+	check(app.profile.data.name == "NOVA TEST","profile editor saves name")
+	press("BACK")
 	await process_frame
-	press("JOGAR   ›")
+	press("OFFLINE")
 	await process_frame
-	check(app.current_page == "game" and is_instance_valid(app.game),"play starts actual arena")
+	check(app.online_mode and find_button("PLAY ONLINE  ›") != null,"mode selector exposes actual online workflow")
+	press("PLAY ONLINE  ›")
+	await process_frame
+	check(app.current_page == "online" and find_button("HOST ROOM") != null and find_button("JOIN ROOM") != null,"online page exposes host and join actions")
+	check(english_page() and controls_in_view(),"online connection page is English and fits viewport")
+	press("JOIN ROOM")
+	await process_frame
+	check(app.current_page == "online" and is_instance_valid(app.toast_label) and app.toast_label.text.contains("IP address"),"empty join address reports validation without fake connected state")
+	# Network transport and room authentication have separate multiprocess tests.
+	# These UI checks prove both buttons invoke the actual OnlineArena workflow.
+	press("HOST ROOM")
+	await process_frame
+	check(app.current_page == "game" and is_instance_valid(app.game) and app.game.name == "OnlineArena","host button starts actual networking arena")
+	if is_instance_valid(app.game):
+		check(app.game.room_mode == "host" and app.game.room_ready,"host arena reports an open ENet room")
+		app.game.end_game(true)
+	await process_frame
+	check(app.current_page == "menu","leaving hosted room returns to menu")
+	check(app.profile.data.stats.runs == 0,"leaving room cannot grant farming rewards")
+	app.show_online()
+	await process_frame
+	var addresses := descendants(app.overlay,"LineEdit")
+	if not addresses.is_empty():
+		addresses[0].text = "127.0.0.1"
+	press("JOIN ROOM")
+	await process_frame
+	check(app.current_page == "game" and is_instance_valid(app.game) and app.game.room_mode == "client","join button starts actual client connection attempt")
+	if is_instance_valid(app.game):
+		check(not app.game.room_ready,"unreachable client does not pretend to be connected")
+		app.game.end_game(true)
+	await process_frame
+	app.online_mode = false
+	app.show_menu()
+	await process_frame
+	# Expand fills both wide and tall landscape displays with complete controls.
+	root.mode = Window.MODE_WINDOWED
+	for dimensions in [Vector2i(1280,720),Vector2i(1600,720),Vector2i(1280,900)]:
+		root.size = dimensions
+		await process_frame
+		app.show_menu()
+		await process_frame
+		check(controls_in_view(),"menu controls visible at physical%s" % dimensions)
+		var logical_size: Vector2 = root.get_visible_rect().size
+		check(app.background.size.is_equal_approx(logical_size) and app.background.global_position.is_equal_approx(Vector2.ZERO),"menu artwork fills viewport without black bars at%s" % dimensions)
+		app.show_collection(false)
+		await process_frame
+		check(controls_in_view(),"collection controls visible at physical%s" % dimensions)
+	root.size = Vector2i(1280,720)
+	await process_frame
+	app.show_menu()
+	await process_frame
+	press("PLAY  ›")
+	await process_frame
+	check(app.current_page == "game" and is_instance_valid(app.game),"play starts actual offline arena")
 	var arena: Node2D = app.game
-	check(arena.player.skin == 1,"equipped Inferno skin reaches gameplay")
-	check(arena.player.nickname == "NOVA TEST","profile name reaches gameplay")
-	check(arena.foods.size() >= 500 and arena.snakes.size() >= 7,"arena initializes real food and bots")
+	check(arena.player.skin == 1 and arena.player.nickname == "NOVA TEST","equipped skin and saved name reach gameplay")
+	check(arena.player.segment_count() <= 16,"player starts as a short serpent rather than large adult")
+	check(arena.foods.size() >= 200 and arena.snakes.size() >= 5,"arena creates real energy and bot competitors")
+	check(app.music.stream.resource_path.ends_with("music_arena.ogg") and not app.music.playing,"arena music track changes while preserving independent mute")
 	var start_position: Vector2 = arena.player.position
 	await create_timer(0.3).timeout
 	check(arena.player.position.distance_to(start_position) > 30,"snake continuously moves through physics updates")
 	var old_score: int = arena.player.score
-	arena.foods[0].p = arena.player.position + Vector2.from_angle(arena.player.heading) * 8
+	arena.foods[0].p = arena.player.position+Vector2.from_angle(arena.player.heading)*8
 	arena.foods[0].v = 8
 	arena.foods[0].active = true
 	arena.rebuild_food_grid()
 	await create_timer(0.1).timeout
-	check(arena.player.score >= old_score + 8,"arena collision with energy collects and grows score")
+	check(arena.player.score >= old_score+8,"food collision increases real score")
 	var viewport_size: Vector2 = arena.get_viewport_rect().size
 	touch(0,arena.joystick_center(viewport_size)+Vector2(40,-20),true)
 	await process_frame
 	touch(1,arena.boost_center(viewport_size),true)
 	await create_timer(0.2).timeout
-	check(arena.joystick_id == 0 and arena.boost_id == 1 and arena.player.boosting,"simultaneous Android joystick and boost remain active")
+	check(arena.joystick_id == 0 and arena.boost_id == 1 and arena.player.boosting,"dispatcher delivers simultaneous joystick and boost touches")
 	touch(2,arena.skill_center(viewport_size),true)
 	await process_frame
-	check(arena.player.cooldown > 0 and arena.player.active_time > 0,"third simultaneous touch activates real ability cooldown")
+	check(arena.player.cooldown > 0 and arena.player.active_time > 0 and arena.joystick_id == 0 and arena.boost_id == 1 and arena.skill_id == 2,"third touch activates power without dropping joystick or boost")
 	touch(0,Vector2.ZERO,false)
 	touch(1,Vector2.ZERO,false)
 	touch(2,Vector2.ZERO,false)
 	await process_frame
-	check(arena.joystick_id == -1 and arena.boost_id == -1,"touch release clears both control owners")
-	arena.handle_interface_click(Vector2(viewport_size.x-45,40),viewport_size)
-	check(arena.paused,"pause button pauses arena simulation")
+	check(arena.joystick_id == -1 and arena.boost_id == -1,"touch release clears control owners")
+	touch(0,Vector2(viewport_size.x-45,40),true)
+	touch(0,Vector2(viewport_size.x-45,40),false)
+	await process_frame
+	check(arena.paused,"dispatched pause touch pauses simulation")
 	var paused_position: Vector2 = arena.player.position
 	await create_timer(0.15).timeout
 	check(arena.player.position == paused_position,"paused simulation stops movement")
-	arena.handle_interface_click(viewport_size/2+Vector2(0,25),viewport_size)
-	check(not arena.paused,"continue button resumes gameplay")
-	# Hit the actual marked world boundary, bypassing spawn protection consistently.
+	touch(0,viewport_size/2+Vector2(0,25),true)
+	touch(0,viewport_size/2+Vector2(0,25),false)
+	await process_frame
+	check(not arena.paused,"continue touch resumes gameplay")
 	arena.player.position = Vector2(arena.BOUNDS+5,0)
 	await create_timer(1.3).timeout
-	check(app.current_page == "results","lethal arena boundary reaches results after defeat effect")
-	check(app.profile.data.stats.runs == 1,"defeat commits exactly one completed run")
-	check(float(app.profile.data.stats.survival) > 0.5,"survival time crosses gameplay/profile API")
-	check(app.profile.data.best_score >= 8,"collected score updates persistent record")
-	check(int(app.reward.coins) >= 10 and int(app.reward.xp) >= 15,"real results grant economy and XP rewards")
-	check(all_buttons_in_canvas(),"results controls fit canvas")
-	press("JOGAR NOVAMENTE")
+	check(app.current_page == "results" and has_label("ELIMINATED"),"lethal world boundary reaches clear ELIMINATED result")
+	check(not has_label("CONNECTION LOST") and not has_label("SINAL PERDIDO"),"ordinary defeat never claims network connection loss")
+	check(app.profile.data.stats.runs == 1 and float(app.profile.data.stats.survival) > 0.5,"defeat saves exactly one run with survival time")
+	check(app.profile.data.best_score >= 8 and int(app.reward.coins) >= 10 and int(app.reward.xp) >= 15,"collected score updates record and real rewards")
+	check(controls_in_view() and english_page(),"results are English and controls fit screen")
+	press("PLAY AGAIN")
 	await process_frame
-	check(app.current_page == "game" and app.game.player.alive,"restart starts fresh playable snake")
+	check(app.current_page == "game" and app.game.player.alive,"restart begins fresh playable serpent")
 	app.game.end_game(true)
 	await process_frame
-	check(app.current_page == "menu","abandon returns to menu")
-	check(app.profile.data.stats.runs == 1,"abandon cannot farm completed-run rewards")
-	restart_profile = load("res://scripts/core/Profile.gd").new()
-	check(restart_profile.load_profile(),"new profile object reloads saved state")
-	check(restart_profile.data.name == "NOVA TEST" and restart_profile.data.equipped == 1 and restart_profile.data.owned.has(1),"name inventory and equipped skin persist after reopen")
-	check(restart_profile.data.best_score == app.profile.data.best_score and restart_profile.data.coins == app.profile.data.coins,"economy and record persist after reopen")
-	check(restart_profile.data.settings.quality == "Baixo" and not restart_profile.data.settings.sound,"graphics and audio preferences persist after reopen")
-	# Keep-aspect project canvas remains1280x720 when physical window changes aspect.
-	root.size = Vector2i(1600,720)
-	await process_frame
-	check(ProjectSettings.get_setting("display/window/stretch/aspect") == "keep","wide phones retain complete canvas with aspect preservation")
+	check(app.current_page == "menu" and app.profile.data.stats.runs == 1,"abandon returns to menu without farming rewards")
+	var reopened = load("res://scripts/core/Profile.gd").new()
+	check(reopened.load_profile(),"new profile instance reloads saved state")
+	check(reopened.data.name == "NOVA TEST" and reopened.data.equipped == 1 and reopened.data.owned.has(1),"name inventory and equipped skin survive reopen")
+	check(reopened.data.best_score == app.profile.data.best_score and reopened.data.coins == app.profile.data.coins,"economy and record survive reopen")
+	check(reopened.data.settings.quality == "Low" and not reopened.data.settings.sound and not reopened.data.settings.music,"graphics and independent audio preferences survive reopen")
 	app.queue_free()
 	await process_frame
+	await create_timer(0.25).timeout
 	print("FLOW RESULT: %d passed, %d failed" % [passed,failed])
 	quit(0 if failed == 0 else 1)

@@ -1,22 +1,24 @@
 ANDROID APK VALIDATION — FINAL War Serpent.io
-Executed: 2026-10-24T20:08:47.244306+00:00, current cloud machine.
+Executed: 2026-10-25T01:07:10.502314+00:00, current cloud machine.
 
 Artifact: builds/WarSerpentIO-debug.apk
-Size: 59801621 bytes (57.03 MiB)
-SHA256: 1682e62fcc7e273623ca919b480247a06678e94843f643665c2825439a66ed1e
+Size: 56276085 bytes (53.67 MiB)
+SHA256: a39e98986e79775ad9398917fd442b09aa86ad63d47888d85c54bc0922a70a9c
 Build command: ./tools/build_android.sh
 Independent validation: python3 tools/validate_android.py
 Full final build log: builds/android-build.log
 Full validation output: docs/apk_validation_details.txt
 Outcome: exit0; APK exported, narrowly manifest-corrected, aligned, re-signed,
-and independently validated after final app changes including engine/font credits.
-Source Main.gd SHA256: 4beda4e01aab5fd27ffb7f195bb2869ce949844958a9742904eeb897cb1dd007
-Source ArenaGame.gd SHA256: b338cdc2a229abfadada101c896f3b923cfbb7eb37d0a41428aebfb8f4164901
+and independently validated after v1.1 performance/UI/audio/multiplayer changes; same signing certificate as v1.0.
+Source Main.gd SHA256: e91de8fa901bdceaef56f4e0c204a2781bb6ef10cb94ba5fc89bdc498ec1f601
+Source ArenaGame.gd SHA256: 6a1503e41fac2b712aa144f860707aa5fac1db5cb2d96974932e07cf88bc60de
+Source OnlineArena.gd SHA256: d4f4ac424f15a619d5d598ab4391729378a1573ce06279641e167f91c0a3ae2d
 
 Manifest (aapt badging+xmltree, exit0):
-- package com.emnioggs.warserpent; label War Serpent.io; v1.0.0/code1.
-- min API24, target/compile API36, landscape0, debuggable development build.
-- OpenGL ES3, GL Compatibility renderer; no uses-permission declarations.
+- package com.emnioggs.warserpent; label War Serpent.io; v1.1.0/code2.
+- min API24, target/compile API36, landscape0, release-template build (debuggable=false).
+- same development signing identity as v1.0; filename retained for download compatibility.
+- OpenGL ES3, GL Compatibility renderer; INTERNET permission for real direct multiplayer; no camera/microphone/storage permissions.
 - exported launcher activity alias with MAIN/LAUNCHER present.
 - FileProvider authority: com.emnioggs.warserpent.fileprovider
 - StartupProvider authority: com.emnioggs.warserpent.androidx-startup
@@ -30,12 +32,21 @@ Signature (apksigner verify --verbose --print-certs, exit0):
 
 Executable/resources:
 - ZIP CRC integrity passed for all entries; real classes.dex+secondary DEX files.
-- four native libraries for ARM64 and ARMv7 present with actual ELF headers.
+- four native libraries for ARM64 and ARMv7 present with actual ELF headers;
+  every payload SHA256 matches the verified official RELEASE template byte-for-byte.
 - compiled Main.scn, Main.gdc, ArenaGame.gdc, Profile.gdc, snake_model.gdc,
   arena_brain.gdc and spatial_hash.gdc packaged.
-- data/catalog.json parsed and exactly matches source JSON; five skins.
-- 126 packaged Godot asset resources, including 51 imported assets.
+- data/catalog.json parsed and exactly matches source JSON; eight skins.
+- 185 packaged Godot asset resources, including 77 imported assets.
 - snake/UI/branding texture and audio resources included.
+- actual packed project.binary: boot_splash/show_image=false, viewport aspect=expand.
+- actual Android runtime arguments include --fullscreen and --edge_to_edge.
+- all six native adaptive foreground densities exactly match the original custom icon
+  after the engine resize; default Godot icon is not used for this native splash.
+- compiled Main set_music_track method enables looping for both packed OGG streams;
+  each track decodes >40seconds, finite non-silent PCM verified on desktop Godot.
+- compiled Main scene, eight snake sprite triplets/icons and OnlineArena resource load.
+- Android12+ system app-icon splash remains OS-managed; actual timing/cutouts untested.
 - res://assets/fonts/LICENSE-DejaVu.txt PRESENT and byte-identical to source
   (APK ZIP entry assets/assets/fonts/LICENSE-DejaVu.txt).
 - credits display exposes the bundled font notice and Godot engine license.
@@ -53,3 +64,4 @@ Device tests:
   and memory profiling on Android hardware were NOT executed.
 - desktop rendering/headless gameplay checks reported separately.
 - signed compilation does not establish full Android-device compatibility.
+- release-template selection alone does not establish measured FPS improvements.

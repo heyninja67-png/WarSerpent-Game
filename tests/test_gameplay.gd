@@ -26,6 +26,7 @@ func _initialize() -> void:
 func run() -> void:
 	seed(10301)
 	var snake := make_snake()
+	check(snake.segment_count() == 10 and snake.mass == 36, "starter snake has ten connected segments with boost mass")
 	for i in range(120):
 		snake.advance(1.0 / 60, 0, false)
 	check(absf(snake.position.x - 324.0) < 0.01, "constant movement covers expected distance")
@@ -54,8 +55,8 @@ func run() -> void:
 		normal.advance(1.0 / 60, 0, false)
 		boosted.advance(1.0 / 60, 0, true)
 	check(boosted.position.x > normal.position.x * 1.6, "boost increases actual movement speed")
-	check(boosted.mass < normal.mass and boosted.mass >= 36.0, "boost consumes mass with lower bound")
-	boosted.mass = 36
+	check(boosted.mass < normal.mass and boosted.mass >= Snake.MIN_MASS, "boost consumes mass with lower bound")
+	boosted.mass = Snake.MIN_MASS
 	boosted.advance(0.1, 0, true)
 	check(not boosted.boosting, "boost stops at minimum mass")
 	var volt := make_snake(0)
@@ -81,6 +82,30 @@ func run() -> void:
 	check(not phantom.lethal_collision() and phantom.slow_time == 0, "phantom avoids collision and negative slow while active")
 	phantom.advance(2.5, 0, false)
 	check(phantom.lethal_collision(), "phantom protection has finite duration")
+	var samurai := make_snake(6)
+	samurai.activate()
+	samurai.advance(0.25, 0, false)
+	check(samurai.position.x > Snake.BASE_SPEED * 0.25 * 1.85, "samurai dash produces real speed increase")
+	samurai.advance(1.0, 0, false)
+	check(samurai.active_time == 0 and samurai.cooldown > 0, "samurai dash is brief and cooldown limited")
+	var solar := make_snake(5)
+	solar.activate()
+	check(solar.collection_radius() == 150, "solar magnet expands actual collection radius")
+	solar.advance(4.1, 0, false)
+	check(solar.collection_radius() == 26, "solar magnet range returns to normal after duration")
+	var catalog: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/catalog.json"))
+	var catalog_consistent := catalog.size() == Snake.COOLDOWNS.size()
+	for item: Dictionary in catalog:
+		catalog_consistent = catalog_consistent and float(item.cooldown) == Snake.COOLDOWNS[int(item.id)] and float(item.duration) == Snake.DURATIONS[int(item.id)]
+	check(catalog_consistent, "all eight skill durations and cooldowns match catalog")
+	var long_snake := make_snake()
+	long_snake.mass = 1700
+	for i in range(1200):
+		long_snake.advance(1.0 / 60.0, float(i) * 0.014, i % 9 == 0)
+	var stable := long_snake.segments.size() == long_snake.segment_count()
+	for index in range(1, long_snake.segments.size()):
+		stable = stable and long_snake.segments[index].distance_to(long_snake.segments[index - 1]) > 9.0 and long_snake.segments[index].distance_to(long_snake.segments[index - 1]) <= 10.01
+	check(stable and long_snake._history.size() == Snake.HISTORY_CAPACITY, "fixed ring history wraps while long curved body keeps spacing")
 	var hash_grid := Hash.new(50)
 	hash_grid.insert(Vector2(49, -1), "boundary")
 	check(hash_grid.query(Vector2(51, 1), 10).has("boundary"), "spatial query includes neighboring and negative cells")
@@ -88,25 +113,25 @@ func run() -> void:
 	check(hash_grid.query(Vector2.ZERO, 200).is_empty(), "spatial hash resets without stale collisions")
 	var game := Arena.new()
 	game.configure(0, 1)
-	game.set_quality("Baixo")
+	game.set_quality("Low")
 	game.set_audio_enabled(false)
 	root.add_child(game)
 	game.set_physics_process(false)
 	game.set_process(false)
-	check(game.snakes.size() == 8 and game.foods.size() == 720, "low profile starts player, seven bots and pooled energy")
+	check(game.snakes.size() == 6 and game.foods.size() == 420, "low profile starts player, five bots and pooled energy")
 	var touch_joy := InputEventScreenTouch.new()
 	touch_joy.index = 2
-	touch_joy.position = Vector2(162, 600)
+	touch_joy.position = game.joystick_center(game.get_viewport_rect().size) + Vector2(50, 0)
 	touch_joy.pressed = true
 	game._input(touch_joy)
 	var touch_boost := InputEventScreenTouch.new()
 	touch_boost.index = 5
-	touch_boost.position = Vector2(1168, 604)
+	touch_boost.position = game.boost_center(game.get_viewport_rect().size)
 	touch_boost.pressed = true
 	game._input(touch_boost)
 	var touch_skill := InputEventScreenTouch.new()
 	touch_skill.index = 7
-	touch_skill.position = Vector2(1034, 573)
+	touch_skill.position = game.skill_center(game.get_viewport_rect().size)
 	touch_skill.pressed = true
 	game._input(touch_skill)
 	check(game.joystick_id == 2 and game.boost_id == 5 and game.skill_id == 7 and game.joystick_vector.x > 0.5, "three simultaneous touch identities steer, boost and use skill")
@@ -118,6 +143,19 @@ func run() -> void:
 	game._input(touch_boost)
 	game.player.cooldown = 0
 	game.player.active_time = 0
+	var pause_touch := InputEventScreenTouch.new()
+	pause_touch.index = 3
+	pause_touch.position = Vector2(game.get_viewport_rect().size.x - 45, 40)
+	pause_touch.pressed = true
+	game._input(pause_touch)
+	var emulated_mouse := InputEventMouseButton.new()
+	emulated_mouse.device = InputEvent.DEVICE_ID_EMULATION
+	emulated_mouse.position = pause_touch.position
+	emulated_mouse.button_index = MOUSE_BUTTON_LEFT
+	emulated_mouse.pressed = true
+	game._input(emulated_mouse)
+	check(game.paused, "touch pause ignores duplicate Android mouse emulation")
+	game.toggle_pause()
 	var before: int = game.player.score
 	game.foods[0].p = game.player.position
 	game.foods[0].active = true
@@ -143,6 +181,36 @@ func run() -> void:
 	enemy.position = game.trails[0].p
 	game.apply_abilities(0.1)
 	check(enemy.slow_time > 0 and enemy.slow_factor < 0.6, "frozen trail slows other snakes")
+	game.player.skin = 7
+	game.player.cooldown = 0
+	game.player.activate()
+	enemy.position = game.player.position + Vector2(160, 0)
+	enemy.slow_time = 0
+	enemy.slow_factor = 1
+	game.apply_abilities(0.1)
+	check(enemy.slow_time > 0 and enemy.slow_factor == 0.60, "toxic cloud slows opponents inside its area")
+	game.player.skin = 5
+	game.player.cooldown = 0
+	game.player.activate()
+	game.foods[1].p = game.player.position + Vector2(110, 0)
+	game.foods[1].active = true
+	game.rebuild_food_grid()
+	game.collect_food(game.player)
+	check(not game.foods[1].active, "solar magnet actually collects energy beyond normal radius")
+	enemy.heading = 0
+	enemy.cooldown = 0
+	enemy.active_time = 0
+	enemy.slow_time = 0
+	enemy.slow_factor = 1
+	enemy.mass = 80
+	game.remote_controls[enemy.id] = {"angle": PI / 2.0, "boost": true, "skill": true}
+	game._physics_process(0.1)
+	check(enemy.boosting and enemy.heading > 0 and enemy.cooldown > 0 and not game.remote_controls[enemy.id].skill, "remote control advances same model and consumes skill tap")
+	game.simulation_enabled = false
+	var paused_position := game.player.position
+	game._physics_process(0.1)
+	check(game.player.position == paused_position, "network clients can disable local authoritative simulation")
+	game.simulation_enabled = true
 	var brain := Brain.new()
 	enemy.position = Vector2(1340, 0)
 	enemy.heading = 0

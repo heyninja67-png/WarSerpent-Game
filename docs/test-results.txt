@@ -2,7 +2,9 @@ Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
 
 PASS: New profile uses defaults
 PASS: Starting economy
-PASS: Five complete skins available
+PASS: Eight complete skin definitions available
+PASS: New profiles use English name and current schema
+PASS: Music and effects enabled independently by default
 PASS: Starter inventory
 PASS: Cannot equip locked skin
 PASS: Unknown skin rejected
@@ -14,15 +16,20 @@ PASS: Duplicate purchase rejected
 PASS: Owned skin equips
 PASS: Name edit persists
 PASS: Empty names rejected
-PASS: Graphics setting changes
+PASS: English graphics setting changes
 PASS: Sound setting changes
+PASS: Disabling effects leaves music enabled
+PASS: Music can be disabled separately
+PASS: Enabling effects leaves music disabled
+PASS: Effects preference restores independently
+PASS: Music setting requires a boolean
 PASS: Difficulty setting changes
 PASS: Unknown graphics profile rejected
 PASS: Invalid difficulty rejected
 PASS: Unknown setting rejected
 PASS: Saved profile reloads
 PASS: Name and selected skin survive restart
-PASS: All settings survive restart
+PASS: All independent audio and graphics settings survive restart
 PASS: Incomplete mission cannot be claimed
 PASS: Run rewards use score, survival, kills
 PASS: High score recorded
@@ -43,11 +50,39 @@ PASS: Recovery preserves inventory and balance
 PASS: Recovered profile can be saved
 PASS: Recovered save becomes healthy primary
 PASS: Mission claims and daily cooldown survive restart
+PASS: v1 profile migrates to current schema: Baixo
+PASS: Legacy graphics choice migrates to English: Baixo
+PASS: Migration preserves previous whole-audio preference: Baixo
+PASS: Migration preserves balances inventory and player-chosen name: Baixo
+PASS: Migrated profile saves in current format: Baixo
+PASS: Migrated settings survive restart: Baixo
+PASS: v1 profile migrates to current schema: Médio
+PASS: Legacy graphics choice migrates to English: Médio
+PASS: Migration preserves previous whole-audio preference: Médio
+PASS: Migration preserves balances inventory and player-chosen name: Médio
+PASS: Migrated profile saves in current format: Médio
+PASS: Migrated settings survive restart: Médio
+PASS: v1 profile migrates to current schema: Alto
+PASS: Legacy graphics choice migrates to English: Alto
+PASS: Migration preserves previous whole-audio preference: Alto
+PASS: Migration preserves balances inventory and player-chosen name: Alto
+PASS: Migrated profile saves in current format: Alto
+PASS: Migrated settings survive restart: Alto
+PASS: New catalog skin can be purchased and equipped: 5
+PASS: New catalog skin cannot be purchased twice: 5
+PASS: New catalog skin can be purchased and equipped: 6
+PASS: New catalog skin cannot be purchased twice: 6
+PASS: New catalog skin can be purchased and equipped: 7
+PASS: New catalog skin cannot be purchased twice: 7
+PASS: New skins deduct their exact combined price
+PASS: Expanded inventory and selected skin persist
+PASS: Expanded catalog contains power metadata and prices
 PASS: Future save version cannot be overwritten
 PASS: Future save remains intact
-PROFILE TESTS: 45 checks, 0 failures
+PROFILE TESTS: 79 checks, 0 failures
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
 
+PASS starter snake has ten connected segments with boost mass
 PASS constant movement covers expected distance
 PASS straight movement maintains axis
 PASS body is sampled by distance with consistent segment spacing
@@ -68,101 +103,200 @@ PASS shield is consumed by collision
 PASS consumed shield does not prevent later collision
 PASS phantom avoids collision and negative slow while active
 PASS phantom protection has finite duration
+PASS samurai dash produces real speed increase
+PASS samurai dash is brief and cooldown limited
+PASS solar magnet expands actual collection radius
+PASS solar magnet range returns to normal after duration
+PASS all eight skill durations and cooldowns match catalog
+PASS fixed ring history wraps while long curved body keeps spacing
 PASS spatial query includes neighboring and negative cells
 PASS spatial hash resets without stale collisions
-PASS low profile starts player, seven bots and pooled energy
+PASS low profile starts player, five bots and pooled energy
 PASS three simultaneous touch identities steer, boost and use skill
 PASS touch ability button changes actual ability state
 PASS releasing joystick preserves held boost touch
+PASS touch pause ignores duplicate Android mouse emulation
 PASS arena collection deactivates food and awards real mass
 PASS flame burst slows nearby opponents
 PASS frost ability creates persistent slowing trail
 PASS frozen trail slows other snakes
+PASS toxic cloud slows opponents inside its area
+PASS solar magnet actually collects energy beyond normal radius
+PASS remote control advances same model and consumes skill tap
+PASS network clients can disable local authoritative simulation
 PASS bot steers away from lethal arena edge
 PASS head-body collision eliminates snake and credits killer
 PASS player death begins defeat transition
 PASS result signal supplies actual match statistics
-GAMEPLAY TESTS: 34 checks, 0 failures
+GAMEPLAY TESTS: 46 checks, 0 failures
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
 
-PASS: startup begins with Emnio splash
-PASS: resource loading is active
-PASS: loading counters reflect actual resource jobs
-PASS: splash/loading reaches menu
-PASS: all real resource jobs finish
-PASS: five skin definitions loaded
-PASS: menu controls fit1280x720 canvas
-PASS: functional button exists: COBRAS
+PASS: startup begins with custom Emnio splash
+PASS: engine boot logo is disabled
+PASS: first animated splash uses Emnio emblem and wordmark
+PASS: loading counter measures actual resource jobs
+PASS: splash contains no loading status phrases
+PASS: short splash reaches menu
+PASS: all24 snake sprite jobs and4 shared resources finish
+PASS: eight distinct serpent definitions load
+PASS: menu has one animated equipped serpent
+PASS: menu uses actual looping Ogg music
+PASS: menu music plays by default
+PASS: menu controls fit current viewport
+PASS: menu presents English text
+PASS: functional button exists: SERPENTS
 PASS: collection opens
-PASS: collection populates skin card controls
-PASS: collection controls fit canvas
+PASS: collection renders four previews per page
+PASS: first collection page contains skins0 through3
+PASS: first collection page stays inside screen
+PASS: functional button exists: ›
+PASS: next button changes collection page
+PASS: second page exposes all four additional skins
+PASS: second page fits screen and uses English descriptions
+PASS: functional button exists: ‹
 PASS: functional button exists: 150 COINS
-PASS: buy action opens genuine purchase confirmation
-PASS: confirmed purchase grants Inferno skin
-PASS: confirmed purchase deducts150 real coins
-PASS: only owned unequipped skin exposes equip action
-PASS: equip button changes persisted selected skin
-PASS: functional button exists: VOLTAR
-PASS: functional button exists: LOJA
-PASS: shop navigation opens market
-PASS: functional button exists: VOLTAR
-PASS: functional button exists: MISSÕES
-PASS: missions expose real reward actions
-PASS: functional button exists: RESGATAR
+PASS: purchase opens genuine confirmation dialog
+PASS: purchase confirmation is English
+PASS: confirmed purchase grants skin and deducts150 coins
+PASS: functional button exists: EQUIP
+PASS: equip changes persisted selected skin
+PASS: Owned filter displays purchased skins only
+PASS: Locked filter excludes owned skins and paginates remainder
+PASS: functional button exists: BACK
+PASS: functional button exists: SHOP
+PASS: shop opens functional English market
+PASS: functional button exists: BACK
+PASS: functional button exists: MISSIONS
+PASS: English missions expose real reward actions
+PASS: functional button exists: CLAIM
 PASS: unfinished mission cannot pay reward
-PASS: functional button exists: VOLTAR
-PASS: functional button exists: RECOMPENSAS
-PASS: functional button exists: ABRIR CARGA
-PASS: daily reward pays documented75 coins3 gems2 fragments
-PASS: functional button exists: ABRIR CARGA
+PASS: functional button exists: BACK
+PASS: functional button exists: REWARDS
+PASS: functional button exists: OPEN CRATE
+PASS: daily crate pays75 coins3 gems2 fragments
+PASS: functional button exists: OPEN CRATE
 PASS: daily reward cannot be claimed twice
-PASS: functional button exists: VOLTAR
-PASS: functional button exists: RANKING
-PASS: local ranking opens
-PASS: functional button exists: VOLTAR
-PASS: functional button exists: CONQUISTAS
-PASS: achievement screen uses four real progress objectives
-PASS: functional button exists: VOLTAR
-PASS: functional button exists: AJUSTES
-PASS: settings has sound toggle
-PASS: sound toggle stops music and persists preference
-PASS: graphics quality selector exists
-PASS: low quality applies30 FPS target
-PASS: functional button exists: CRÉDITOS E LICENÇAS
-PASS: standalone app exposes Godot MIT license and attribution
-PASS: functional button exists: VOLTAR
-PASS: functional button exists: PILOTO  /  NV. 1
-PASS: profile name editor exists
-PASS: functional button exists: SALVAR NOME
+PASS: functional button exists: BACK
+PASS: functional button exists: RECORDS
+PASS: records screen identifies itself as local
+PASS: functional button exists: BACK
+PASS: functional button exists: ACHIEVEMENTS
+PASS: achievement page shows real English milestones
+PASS: functional button exists: BACK
+PASS: functional button exists: SETTINGS
+PASS: settings exposes independent SFX and music switches
+PASS: SFX mute leaves music playing
+PASS: music switch independently stops music
+PASS: SFX can be re-enabled while music remains muted
+PASS: quality selector exists
+PASS: Low quality applies30 FPS target
+PASS: settings controls fit screen and use English
+PASS: functional button exists: CREDITS & LICENSES
+PASS: credits opens scrollable license text
+PASS: credits include Godot and font attribution/license
+PASS: functional button exists: BACK
+PASS: functional button exists: PILOT  /  LV. 1
+PASS: profile editor exposes name input
+PASS: functional button exists: SAVE NAME
 PASS: profile editor saves name
-PASS: functional button exists: VOLTAR
-PASS: functional button exists: JOGAR   ›
-PASS: play starts actual arena
-PASS: equipped Inferno skin reaches gameplay
-PASS: profile name reaches gameplay
-PASS: arena initializes real food and bots
+PASS: functional button exists: BACK
+PASS: functional button exists: OFFLINE
+PASS: mode selector exposes actual online workflow
+PASS: functional button exists: PLAY ONLINE  ›
+PASS: online page exposes host and join actions
+PASS: online connection page is English and fits viewport
+PASS: functional button exists: JOIN ROOM
+PASS: empty join address reports validation without fake connected state
+PASS: functional button exists: HOST ROOM
+PASS: host button starts actual networking arena
+PASS: host arena reports an open ENet room
+PASS: leaving hosted room returns to menu
+PASS: leaving room cannot grant farming rewards
+PASS: functional button exists: JOIN ROOM
+PASS: join button starts actual client connection attempt
+PASS: unreachable client does not pretend to be connected
+PASS: menu controls visible at physical(1280, 720)
+PASS: menu artwork fills viewport without black bars at(1280, 720)
+PASS: collection controls visible at physical(1280, 720)
+PASS: menu controls visible at physical(1600, 720)
+PASS: menu artwork fills viewport without black bars at(1600, 720)
+PASS: collection controls visible at physical(1600, 720)
+PASS: menu controls visible at physical(1280, 900)
+PASS: menu artwork fills viewport without black bars at(1280, 900)
+PASS: collection controls visible at physical(1280, 900)
+PASS: functional button exists: PLAY  ›
+PASS: play starts actual offline arena
+PASS: equipped skin and saved name reach gameplay
+PASS: player starts as a short serpent rather than large adult
+PASS: arena creates real energy and bot competitors
+PASS: arena music track changes while preserving independent mute
 PASS: snake continuously moves through physics updates
-PASS: arena collision with energy collects and grows score
-PASS: simultaneous Android joystick and boost remain active
-PASS: third simultaneous touch activates real ability cooldown
-PASS: touch release clears both control owners
-PASS: pause button pauses arena simulation
+PASS: food collision increases real score
+PASS: dispatcher delivers simultaneous joystick and boost touches
+PASS: third touch activates power without dropping joystick or boost
+PASS: touch release clears control owners
+PASS: dispatched pause touch pauses simulation
 PASS: paused simulation stops movement
-PASS: continue button resumes gameplay
-PASS: lethal arena boundary reaches results after defeat effect
-PASS: defeat commits exactly one completed run
-PASS: survival time crosses gameplay/profile API
-PASS: collected score updates persistent record
-PASS: real results grant economy and XP rewards
-PASS: results controls fit canvas
-PASS: functional button exists: JOGAR NOVAMENTE
-PASS: restart starts fresh playable snake
-PASS: abandon returns to menu
-PASS: abandon cannot farm completed-run rewards
-PASS: new profile object reloads saved state
-PASS: name inventory and equipped skin persist after reopen
-PASS: economy and record persist after reopen
-PASS: graphics and audio preferences persist after reopen
-PASS: wide phones retain complete canvas with aspect preservation
-FLOW RESULT: 79 passed, 0 failed
-Logs da execução: /tmp/warserpent-flow-tests.Wuaf64
+PASS: continue touch resumes gameplay
+PASS: lethal world boundary reaches clear ELIMINATED result
+PASS: ordinary defeat never claims network connection loss
+PASS: defeat saves exactly one run with survival time
+PASS: collected score updates record and real rewards
+PASS: results are English and controls fit screen
+PASS: functional button exists: PLAY AGAIN
+PASS: restart begins fresh playable serpent
+PASS: abandon returns to menu without farming rewards
+PASS: new profile instance reloads saved state
+PASS: name inventory and equipped skin survive reopen
+PASS: economy and record survive reopen
+PASS: graphics and independent audio preferences survive reopen
+FLOW RESULT: 119 passed, 0 failed
+--- client-host.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: server accepted real remote human
+PASS: server accepted rate-limited input packets
+PASS: server awarded food to remote player
+PASS: server applied remote skill request and cooldown
+NETWORK host: 5 checks, 0 failures
+
+--- client.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: client handshake assigns distinct authoritative snake
+PASS: client receives ongoing authoritative snapshots
+PASS: client sends steering inputs
+PASS: remote steering produces visible synchronized motion
+PASS: server preserves selected skin and nickname
+PASS: food growth and ability cooldown synchronize from host
+PASS: real initial food data synchronized
+NETWORK client: 8 checks, 0 failures
+
+--- disconnect-host.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: server accepted real remote human
+PASS: server accepted rate-limited input packets
+PASS: server awarded food to remote player
+PASS: server applied remote skill request and cooldown
+NETWORK host: 5 checks, 0 failures
+
+--- disconnect.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: connection failure returns honest network error without match rewards
+NETWORK disconnect: 2 checks, 0 failures
+
+--- unreachable.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: connection failure returns honest network error without match rewards
+NETWORK unreachable: 2 checks, 0 failures
+
+MULTIPLAYER PASS: real two-process UDP movement, food, cooldowns, host disconnect and timeout; logs=/tmp/warserpent-network-ryistb47
+Logs da execução: /tmp/warserpent-flow-tests.CXIaZp

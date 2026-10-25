@@ -1,0 +1,97 @@
+{
+  "music_menu": {
+    "title": "Neon Coil",
+    "duration_seconds": 45.17646258503402,
+    "sample_rate": 44100,
+    "channels": 2,
+    "bpm": 85,
+    "bars": 16,
+    "time_signature": "4/4",
+    "key": "C minor",
+    "peak_dbfs": -1.3100309751286467,
+    "rms_dbfs": -12.723030609413772,
+    "loop_endpoint_difference": 0.0,
+    "file_bytes": 571027,
+    "decoded": {
+      "duration_seconds": 45.17646258503402,
+      "peak_dbfs": -1.244051218032837,
+      "rms_dbfs": -12.71160888671875,
+      "finite": true,
+      "clipped_samples": 0,
+      "loop_endpoint_difference": 0.005682706832885742
+    }
+  },
+  "music_arena": {
+    "title": "Overdrive",
+    "duration_seconds": 45.17646258503402,
+    "sample_rate": 44100,
+    "channels": 2,
+    "bpm": 85,
+    "bars": 16,
+    "time_signature": "4/4",
+    "key": "C minor",
+    "peak_dbfs": -1.3100309751286467,
+    "rms_dbfs": -14.168809188358672,
+    "loop_endpoint_difference": 0.0,
+    "file_bytes": 638833,
+    "decoded": {
+      "duration_seconds": 45.17646258503402,
+      "peak_dbfs": -1.5417462587356567,
+      "rms_dbfs": -14.159430503845215,
+      "finite": true,
+      "clipped_samples": 0,
+      "loop_endpoint_difference": 0.0017161071300506592
+    }
+  },
+  "new_sfx": {
+    "hover": {
+      "duration_seconds": 0.09501133786848072,
+      "sample_rate": 44100,
+      "channels": 1,
+      "peak_dbfs": -18.633691333494365,
+      "clipped_samples": 0
+    },
+    "pause": {
+      "duration_seconds": 0.24,
+      "sample_rate": 44100,
+      "channels": 1,
+      "peak_dbfs": -14.555539405444499,
+      "clipped_samples": 0
+    },
+    "victory": {
+      "duration_seconds": 1.65,
+      "sample_rate": 44100,
+      "channels": 1,
+      "peak_dbfs": -8.47495626485139,
+      "clipped_samples": 0
+    },
+    "hit": {
+      "duration_seconds": 0.25,
+      "sample_rate": 44100,
+      "channels": 1,
+      "peak_dbfs": -2.9756842854712398,
+      "clipped_samples": 0
+    },
+    "purchase": {
+      "duration_seconds": 0.65,
+      "sample_rate": 44100,
+      "channels": 1,
+      "peak_dbfs": -9.388465305143535,
+      "clipped_samples": 0
+    },
+    "error": {
+      "duration_seconds": 0.28,
+      "sample_rate": 44100,
+      "channels": 1,
+      "peak_dbfs": -13.71263495041681,
+      "clipped_samples": 0
+    },
+    "start": {
+      "duration_seconds": 0.72,
+      "sample_rate": 44100,
+      "channels": 1,
+      "peak_dbfs": -9.845596276766424,
+      "clipped_samples": 0
+    }
+  }
+}

@@ -2,9 +2,9 @@
 
 ## Nesta versão
 
-A versão vertical contém uma arena offline Neon City, cinco serpentes com poderes, bots, controles simultâneos, fluxo completo de partida, economia local, coleção, loja de coins, missões, carga diária, conquistas e perfil persistente. Há sprites e interface próprios, música/efeitos, testes automatizados e configuração Android para APK de desenvolvimento.
+A versão vertical contém uma arena offline Neon City, oito serpentes com poderes, bots, controles simultâneos, fluxo completo de partida, economia local, coleção, loja de coins, missões, carga diária, conquistas e perfil persistente. Na v1.1 há conexão direta real ENet, UI em inglês, músicas synthwave, renderização em lotes, oito skins e APK otimizado com certificado de desenvolvimento. Partidas públicas automáticas continuam pendentes.
 
-As raridades usadas são Comum, Incomum, Rara, Épica e Lendária. Gems e fragments são contabilizados, mas não possuem lojas próprias. O registro do menu é local; adversários são bots. O seletor oferece três dificuldades do mesmo modo arena.
+As raridades usadas são Comum, Incomum, Rara, Épica, Lendária e Mítica. Gems e fragments são contabilizados, mas não possuem lojas próprias. O registro do menu é local; adversários são bots. O seletor oferece três dificuldades do mesmo modo arena.
 
 ## Validação prioritária em Android
 
@@ -15,7 +15,7 @@ As raridades usadas são Comum, Incomum, Rara, Épica e Lendária. Gems e fragme
 
 ## Expansão de produto
 
-- Extrair habilidades para módulos orientados por dados; substituir limites fixos de cinco skins. Só então ampliar gradualmente para 20 e 50+ identidades, com arte e poderes testados individualmente.
+- Extrair habilidades para módulos orientados por dados; substituir limites fixos de oito skins. Só então ampliar gradualmente para 20 e 50+ identidades, com arte e poderes testados individualmente.
 - Acrescentar raridades Mítica e Divina com itens efetivamente implementados, animações de desbloqueio e balanceamento.
 - Desenvolver Cosmic Devourer, Golden Emperor, Neon Samurai, Void Dragon, Divine Serpent e as demais ideias do catálogo solicitado; não estão disponíveis atualmente.
 - Adicionar Digital Void, Cosmic Rift, Toxic Wasteland, Cyber Temple e Frozen Nexus com carregamento e regras de arena configuráveis.
@@ -24,7 +24,7 @@ As raridades usadas são Comum, Incomum, Rara, Épica e Lendária. Gems e fragme
 
 ## Engenharia e distribuição
 
-- Medir draw calls e empacotar sprites em atlas quando os números justificarem; ampliar pooling e reutilização de buffers nos pontos identificados pelo profiler.
+- A v1.1 reduziu draw calls com MultiMesh e caches; medir em aparelhos e ampliar atlas quando os números justificarem; ampliar pooling e reutilização de buffers nos pontos identificados pelo profiler.
 - Testar automatização de APK em emulador e CI, incluindo instalação, logs Android e capturas reproduzíveis.
 - Preparar assinatura privada de release, AAB, revisão de políticas e materiais de loja. O APK debug atual não representa uma publicação na Play Store.
 - Projetar servidor autoritativo, protocolo, autenticação, sincronização e segurança antes de adicionar multiplayer ou ranking online. Nada disso é simulado por telas nesta versão.

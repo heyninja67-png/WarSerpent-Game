@@ -28,18 +28,143 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def inspect_packaged_game(z, godot, command, evidence):
+    """Load compiled game resources from this APK with matching desktop Godot.
+
+    This verifies the packed settings/resources/code; it is not Android execution.
+    No app scene is attached to the tree, so no profile is read/written and no
+    network connections or game services are started.
+    """
+    count = struct.unpack_from('<I', z.read('assets/_cl_'))[0]
+    raw = z.read('assets/_cl_')
+    offset = 4
+    argv = []
+    require(count < 128, 'Invalid packaged argument count')
+    for _ in range(count):
+        require(offset + 4 <= len(raw), 'Truncated packaged command line')
+        length = struct.unpack_from('<I', raw, offset)[0]
+        offset += 4
+        require(offset + length <= len(raw), 'Invalid packaged argument length')
+        argv.append(raw[offset:offset + length].decode('utf-8'))
+        offset += length
+    require(offset == len(raw), 'Trailing packaged command-line data')
+    require('--fullscreen' in argv and '--edge_to_edge' in argv, 'Immersive/edge-to-edge runtime flags missing')
+    require('--remote-debug' not in argv, 'Unexpected debug connection in release APK')
+    evidence.append('Packaged Android runtime arguments: ' + json.dumps(argv) + '\n')
+    with tempfile.TemporaryDirectory(prefix='warserpent-apk-resources-') as directory:
+        root = Path(directory)
+        bundle = root/'bundle'
+        bundle.mkdir()
+        for name in z.namelist():
+            if not name.startswith('assets/') or name.endswith('/'):
+                continue
+            target = (bundle/name[7:]).resolve()
+            require(target.is_relative_to(bundle), 'Unsafe APK asset path')
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(z.read(name))
+        icons = []
+        for name in z.namelist():
+            if 'icon_foreground' in name and name.endswith(('.webp', '.png')):
+                target = root/name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(z.read(name))
+                icons.append(str(target))
+        require(len(icons) == 6, 'Expected six native adaptive foreground densities')
+        script = root/'check_packaged_game.gd'
+        gdscript = '''extends SceneTree
+var checks := 0
+var failures := 0
+func verify(ok: bool, message: String) -> void:
+ checks += 1
+ if not ok:
+  failures += 1
+  push_error(message)
+func _initialize() -> void:
+ verify(ProjectSettings.get_setting("application/config/version") == "1.1.0", "Packed game version")
+ verify(ProjectSettings.get_setting("application/boot_splash/show_image",true) == false, "Default Godot boot image disabled")
+ verify(ProjectSettings.get_setting("display/window/stretch/aspect") == "expand", "Full viewport aspect expansion")
+ verify(ProjectSettings.get_setting("rendering/renderer/rendering_method.mobile") == "gl_compatibility", "Mobile GL renderer")
+ var scene = load("res://scenes/Main.tscn")
+ verify(scene is PackedScene, "Compiled main scene load")
+ var app = scene.instantiate()
+ app.profile.data.settings.music = false
+ app.music = AudioStreamPlayer.new()
+ app.add_child(app.music)
+ var audio_details := {}
+ for track in ["menu","arena"]:
+  app.set_music_track(track)
+  var stream = app.music.stream
+  verify(stream is AudioStreamOggVorbis, "Packaged OGG resource " + track)
+  verify(stream.loop, "Compiled game method enables loop " + track)
+  verify(stream.get_length() > 40.0, "Music duration " + track)
+  var playback = stream.instantiate_playback()
+  playback.start()
+  var pcm = playback.mix_audio(1.0,8192)
+  var peak := 0.0
+  var finite := true
+  for sample in pcm:
+   finite = finite and is_finite(sample.x) and is_finite(sample.y)
+   peak = maxf(peak,maxf(absf(sample.x),absf(sample.y)))
+  verify(finite, "Finite decoded music samples " + track)
+  verify(peak > 0.0001, "Packaged music contains non-silent PCM " + track)
+  audio_details[track] = {"duration":stream.get_length(),"loop":stream.loop,"decoded_peak":peak}
+  playback.stop()
+ for skin in range(8):
+  for part in ["head","body","tail"]:
+   var texture = load("res://assets/snakes/%s_%d.png" % [part,skin])
+   verify(texture is Texture2D and texture.get_width() > 0, "Packaged snake texture")
+  verify(load("res://assets/icons/ability_%d.png" % skin) is Texture2D, "Packaged ability texture")
+ var network = load("res://scripts/network/OnlineArena.gd")
+ verify(network != null and network.can_instantiate(), "Compiled multiplayer script load")
+ var room = network.new()
+ verify(room.has_method("cache_host_address"), "Latest compiled host address cache")
+ room.room_port = 24680
+ room.cache_host_address()
+ verify(room.host_connection_hint.contains("24680"), "Compiled host HUD hint contains actual UDP port")
+ verify(room.valid_lan_ipv4("192.168.1.42") and not room.valid_lan_ipv4("127.0.0.1"), "Compiled host LAN address selection")
+ print("PACKAGED_HOST_HINT=",room.host_connection_hint)
+ room.free()
+ verify(load("res://assets/effects/energy.png") is Texture2D, "Packaged new energy sprite")
+ var original_icon = Image.load_from_file(__SOURCE_ICON__)
+ var native_paths = __NATIVE_ICONS__
+ for path in native_paths:
+  var native = Image.load_from_file(path)
+  var expected = original_icon.duplicate()
+  expected.resize(native.get_width(),native.get_height(),Image.INTERPOLATE_LANCZOS)
+  verify(expected.get_data() == native.get_data(), "Native adaptive foreground is custom app artwork")
+ app.free()
+ print("PACKAGED_GAME_RESOURCE_CHECKS=",checks," FAILURES=",failures)
+ print("PACKAGED_MUSIC=",JSON.stringify(audio_details))
+ print("PACKAGED_ENGINE_BOOT_IMAGE=false; ASPECT=expand; NATIVE_CUSTOM_ICON_DENSITIES=",native_paths.size())
+ quit(1 if failures else 0)
+'''
+        gdscript = gdscript.replace('__SOURCE_ICON__', json.dumps(str(ROOT/'assets/branding/icon.png')))
+        gdscript = gdscript.replace('__NATIVE_ICONS__', json.dumps(icons))
+        script.write_text(gdscript)
+        env = os.environ.copy()
+        env['XDG_CONFIG_HOME'] = str(root/'config')
+        env['XDG_DATA_HOME'] = str(root/'data')
+        env['XDG_CACHE_HOME'] = str(root/'cache')
+        output = command([godot, '--headless', '--path', bundle, '--script', script], env=env)
+        require('SCRIPT ERROR:' not in output and 'ERROR:' not in output, 'Packed resource runner reported errors')
+        require('FAILURES=0' in output, 'Packed resource assertions failed')
+    return argv
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('apk', type=Path, nargs='?', default=ROOT/'builds/WarSerpentIO-debug.apk')
     parser.add_argument('--sdk', type=Path, default=Path(os.environ.get('ANDROID_HOME', '/workspace/toolchains/android-sdk')))
     parser.add_argument('--build-tools', default='35.0.1')
+    parser.add_argument('--godot', default=os.environ.get('GODOT', 'godot'))
+    parser.add_argument('--release-template', type=Path, default=Path(os.environ.get('XDG_DATA_HOME','/workspace/.local/share'))/'godot/export_templates/4.6.3.stable/android_release.apk')
     args = parser.parse_args()
     apk = args.apk.resolve()
     sdk = args.sdk/'build-tools'/args.build_tools
     evidence = []
 
-    def command(argv):
-        result = subprocess.run(list(map(str, argv)), capture_output=True, text=True)
+    def command(argv, env=None):
+        result = subprocess.run(list(map(str, argv)), capture_output=True, text=True, env=env, timeout=90)
         evidence.append('$ ' + ' '.join(map(str, argv)) + '\n' + result.stdout + result.stderr + '\nexit=' + str(result.returncode) + '\n')
         require(result.returncode == 0, 'Command failed: ' + str(argv))
         return result.stdout
@@ -49,14 +174,17 @@ def main():
     require('Verified using v3 scheme (APK Signature Scheme v3): true' in signature, 'APK v3 signature invalid')
     cert_match = re.search(r'Signer #1 certificate SHA-256 digest: ([0-9a-f]+)', signature)
     require(cert_match is not None, 'No signer certificate digest found')
+    require(cert_match.group(1) == os.environ.get('WARSERPENT_EXPECTED_CERT_SHA256','5764b2c60e35c535276fccf3e112de4f5d5f991c6512f8b584624743d61db620'), 'Signing key differs from installed v1.0.0; update would fail')
     badging = command([sdk/'aapt', 'dump', 'badging', apk])
     require("name='com.emnioggs.warserpent'" in badging, 'Wrong APK package')
-    require("versionCode='1'" in badging and "versionName='1.0.0'" in badging, 'Wrong APK version')
+    require("versionCode='2'" in badging and "versionName='1.1.0'" in badging, 'Wrong APK version')
     require("sdkVersion:'24'" in badging and "targetSdkVersion:'36'" in badging, 'Unexpected API levels')
     require("native-code: 'arm64-v8a' 'armeabi-v7a'" in badging, 'Missing native ABIs')
+    require('application-debuggable' not in badging, 'Optimized build must not be debuggable')
     manifest = command([sdk/'aapt', 'dump', 'xmltree', apk, 'AndroidManifest.xml'])
     require('android:screenOrientation(0x0101001e)=(type 0x10)0x0' in manifest, 'Landscape orientation missing')
-    require('uses-permission' not in manifest, 'Unexpected Android permissions')
+    permissions = re.findall(r'E: uses-permission[^\n]*\n\s+A: android:name[^\n]*?="([^"]+)"', manifest)
+    require(set(permissions) == {'android.permission.INTERNET'}, 'Unexpected permission set: '+repr(permissions))
     require('android.intent.category.LAUNCHER' in manifest and 'android.intent.action.MAIN' in manifest, 'Launcher alias missing')
     command([sdk/'zipalign', '-c', '-P', '16', '4', apk])
     spec = importlib.util.spec_from_file_location('manifestfix', ROOT/'tools/fix_android_manifest.py')
@@ -81,14 +209,23 @@ def main():
         require(json.loads(z.read('assets/data/catalog.json')) == json.loads((ROOT/'data/catalog.json').read_text()), 'Catalog differs from source')
         require(z.read('assets/assets/fonts/LICENSE-DejaVu.txt') == (ROOT/'assets/fonts/LICENSE-DejaVu.txt').read_bytes(), 'Font notice missing or differs from source')
         require(any(n.endswith('Main.scn') for n in names), 'Compiled main scene missing')
+        require(len(json.loads(z.read('assets/data/catalog.json'))) == 8, 'Expected eight playable skins')
+        for track in ['music_menu', 'music_arena']:
+            require(any(track in n for n in names), 'Missing background music: '+track)
+        require('assets/scripts/network/OnlineArena.gdc' in names, 'Real multiplayer code missing')
+        packed_argv = inspect_packaged_game(z,args.godot,command,evidence)
         native = []
-        with tempfile.TemporaryDirectory(prefix='warserpent-elf-') as tmp:
+        require(args.release_template.is_file(), 'Verified release template missing')
+        with zipfile.ZipFile(args.release_template) as reference, tempfile.TemporaryDirectory(prefix='warserpent-elf-') as tmp:
             for name in names:
                 if not name.endswith('.so'):
                     continue
                 lib = Path(tmp)/name
                 lib.parent.mkdir(parents=True, exist_ok=True)
-                lib.write_bytes(z.read(name))
+                payload = z.read(name)
+                require(hashlib.sha256(payload).digest() == hashlib.sha256(reference.read(name)).digest(), 'Native payload does not match official release template: '+name)
+                evidence.append('Official release-template native payload verified SHA256 '+hashlib.sha256(payload).hexdigest()+' '+name+'\n')
+                lib.write_bytes(payload)
                 require(lib.read_bytes()[:4] == b'\x7fELF', 'Native library is not ELF')
                 output = command(['readelf', '-lW', lib])
                 loads = [s.strip() for s in output.splitlines() if s.strip().startswith('LOAD')]
@@ -112,14 +249,16 @@ Independent validation: python3 tools/validate_android.py
 Full final build log: builds/android-build.log
 Full validation output: docs/apk_validation_details.txt
 Outcome: exit0; APK exported, narrowly manifest-corrected, aligned, re-signed,
-and independently validated after final app changes including engine/font credits.
+and independently validated after v1.1 performance/UI/audio/multiplayer changes; same signing certificate as v1.0.
 Source Main.gd SHA256: {hashlib.sha256((ROOT/'scripts/ui/Main.gd').read_bytes()).hexdigest()}
 Source ArenaGame.gd SHA256: {hashlib.sha256((ROOT/'scripts/gameplay/ArenaGame.gd').read_bytes()).hexdigest()}
+Source OnlineArena.gd SHA256: {hashlib.sha256((ROOT/'scripts/network/OnlineArena.gd').read_bytes()).hexdigest()}
 
 Manifest (aapt badging+xmltree, exit0):
-- package com.emnioggs.warserpent; label War Serpent.io; v1.0.0/code1.
-- min API24, target/compile API36, landscape0, debuggable development build.
-- OpenGL ES3, GL Compatibility renderer; no uses-permission declarations.
+- package com.emnioggs.warserpent; label War Serpent.io; v1.1.0/code2.
+- min API24, target/compile API36, landscape0, release-template build (debuggable=false).
+- same development signing identity as v1.0; filename retained for download compatibility.
+- OpenGL ES3, GL Compatibility renderer; INTERNET permission for real direct multiplayer; no camera/microphone/storage permissions.
 - exported launcher activity alias with MAIN/LAUNCHER present.
 - FileProvider authority: {authorities['androidx.core.content.FileProvider']}
 - StartupProvider authority: {authorities['androidx.startup.InitializationProvider']}
@@ -133,12 +272,21 @@ Signature (apksigner verify --verbose --print-certs, exit0):
 
 Executable/resources:
 - ZIP CRC integrity passed for all entries; real classes.dex+secondary DEX files.
-- four native libraries for ARM64 and ARMv7 present with actual ELF headers.
+- four native libraries for ARM64 and ARMv7 present with actual ELF headers;
+  every payload SHA256 matches the verified official RELEASE template byte-for-byte.
 - compiled Main.scn, Main.gdc, ArenaGame.gdc, Profile.gdc, snake_model.gdc,
   arena_brain.gdc and spatial_hash.gdc packaged.
-- data/catalog.json parsed and exactly matches source JSON; five skins.
+- data/catalog.json parsed and exactly matches source JSON; eight skins.
 - {assets} packaged Godot asset resources, including {imports} imported assets.
 - snake/UI/branding texture and audio resources included.
+- actual packed project.binary: boot_splash/show_image=false, viewport aspect=expand.
+- actual Android runtime arguments include --fullscreen and --edge_to_edge.
+- all six native adaptive foreground densities exactly match the original custom icon
+  after the engine resize; default Godot icon is not used for this native splash.
+- compiled Main set_music_track method enables looping for both packed OGG streams;
+  each track decodes >40seconds, finite non-silent PCM verified on desktop Godot.
+- compiled Main scene, eight snake sprite triplets/icons and OnlineArena resource load.
+- Android12+ system app-icon splash remains OS-managed; actual timing/cutouts untested.
 - res://assets/fonts/LICENSE-DejaVu.txt PRESENT and byte-identical to source
   (APK ZIP entry assets/assets/fonts/LICENSE-DejaVu.txt).
 - credits display exposes the bundled font notice and Godot engine license.
@@ -156,11 +304,19 @@ Device tests:
   and memory profiling on Android hardware were NOT executed.
 - desktop rendering/headless gameplay checks reported separately.
 - signed compilation does not establish full Android-device compatibility.
+- release-template selection alone does not establish measured FPS improvements.
 '''
     (ROOT/'builds/AndroidManifest.xmltree.txt').write_text(manifest)
     (ROOT/'docs/apk_validation.txt').write_text(summary)
     (ROOT/'docs/apk_validation_details.txt').write_text('\n'.join(evidence))
+    notes_path = ROOT/'docs/android_v1_1_validation.md'
+    if notes_path.is_file():
+        notes = notes_path.read_text()
+        notes = re.sub(r'^\| APK bytes \|.*$', lambda _: '| APK bytes | `'+str(apk.stat().st_size)+'` ('+format(apk.stat().st_size/1024/1024,'.2f')+'MiB) |', notes, flags=re.M)
+        notes = re.sub(r'^\| APK SHA256 \|.*$', lambda _: '| APK SHA256 | `'+sha+'` |', notes, flags=re.M)
+        notes_path.write_text(notes)
     print(summary)
+    print('Packaged Android runtime flags: '+json.dumps(packed_argv))
 
 
 if __name__ == '__main__':
