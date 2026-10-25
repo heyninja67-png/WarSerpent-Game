@@ -1,71 +1,73 @@
-# War Serpent.io 1.1.0 — relatório da atualização
+# War Serpent.io 1.2.0 — Emnio Games
 
-Estúdio: Emnio. Application ID: `com.emnioggs.warserpent`. Versão 1.1.0, version code 2.
+Application ID: `com.emnioggs.warserpent`. Versão1.2.0, version code3. APK Android nativo realmente compilado com Godot4.6.3 em modo release otimizado e assinado com a mesma identidade das versões anteriores.
 
-## Entrega
+## Resultado visual e funcional
 
-APK Android nativo realmente exportado em **modo release otimizado**, assinado com a **mesma identidade de desenvolvimento da versão 1.0.0**. O nome local `builds/WarSerpentIO-debug.apk` é mantido por compatibilidade das ferramentas; não indica o modo interno da exportação. A release pública usa `WarSerpentIO-v1.1.0.apk`.
+A interface foi reconstruída a partir da organização das referências fornecidas, usando arte própria. A entrega final usa o lobby de jogo com START dourado; a proposta anterior de interface plana não foi publicada como versão1.2.
 
-Instale por cima da versão anterior para preservar os dados; não desinstale primeiro. Assinatura e migração dos saves foram verificadas separadamente. A instalação de atualização em um aparelho não foi testada, pois não há dispositivo conectado.
+- **Lobby:** perfil/moedas/gemas no topo, navegação lateral, cobra grande em pose vertical sobre plataforma animada, coleção funcional à direita, modo acima do START dourado inferior direito e barra inferior de coleção.
+- **Partida:** minimapa circular real à esquerda, TIME central, SCORE compacto, classificação com até dez competidores reais, poderes circulares agrupados abaixo, joystick e aceleração por toque.
+- **Gráficos:** piso de blocos roxos com profundidade e oito conjuntos de cabeça/corpo/cauda redesenhados, arredondados, brilhantes e expressivos.
+- **Marcas:** novo logo original War Serpent.io e ícone Android; nova marca completa **Emnio Games** na abertura, sem frases de carregamento ou imagem padrão Godot.
+- **Jogabilidade:** direção mais ágil para cobras pequenas, deadzone radial com histerese, controles liberados corretamente ao pausar/perder foco, proteção inicial e duração dos poderes visíveis, feedback de coleta e aviso de borda.
+- **Mantido:** dez segmentos iniciais, oito poderes reais, bots, crescimento, colisões, loja/economia, missões, música/efeitos, inglês, save e multiplayer direto.
 
-- APK e fontes: pasta `builds/` e GitHub Releases.
-- Assinatura, hash, tamanho, manifesto e payload exatos: [docs/apk_validation.txt](docs/apk_validation.txt).
-- Instruções: [README.md](README.md).
-- Engine: Godot 4.6.3 oficial, GL Compatibility, Android API24+, ARM64/ARMv7, target API36.
-- Servidor público: nenhum. O usuário escolheu conexão direta.
+Capturas reais do framebuffer: [docs/screenshots](docs/screenshots). Lobby, splash, coleção, gameplay e resultados foram executados e inspecionados. As imagens não são montagens de uma interface fictícia.
 
-## Mudanças solicitadas e implementadas
+## Multiplayer e minimapa
 
-| Pedido | Resultado |
-|---|---|
-| Reduzir travamentos | Corpo com histórico circular, spatial hashing sem dicionário por segmento, consultas locais de IA, MultiMesh para comida/corpos, cache de HUD/ranking/sons, orçamento Auto conservador no Android e engine em modo release |
-| Cobra inicial pequena | 10 segmentos iniciais e massa36, comparados a33 segmentos na v1.0; crescimento e boost continuam reais |
-| Música e mais efeitos | Duas composições synthwave originais de45,18s, menu/arena, loop contínuo;14 WAVs no total, controles de música e efeitos independentes |
-| Interface em inglês | Menu, coleção, loja, habilidades, missões, conquistas, ajustes, resultados e HUD em inglês; nomes escolhidos pelo jogador são preservados |
-| Mensagem de morte | Derrota normal agora mostra **ELIMINATED**, sem alegar perda de conexão |
-| UI mais bonita/animada | Menu reorganizado, materiais de botões/painéis novos, hover/toque, logo flutuante, prévia animada, transições e coleção paginada |
-| Mais cobras | Solar Wyrm, Neon Samurai e Toxic Fang, com arte distinta e poderes reais; oito skins ao todo |
-| Tela até as bordas | Canvas expandido, fundo cobrindo viewport, conteúdo seguro centralizado, imersão e edge-to-edge Android habilitados |
-| Abertura melhor | Marca EMNIO redesenhada, símbolo/wordmark animados e transição curta; sem frases, slogans ou contadores de carregamento |
-| Remover logo Godot | Desativada a imagem padrão de boot da engine; ícones nativos personalizados verificados. A splash de sistema Android12+ não pode ser totalmente eliminada e usa a marca do app |
-| Modo online | ENet real: criar sala e entrar por endereço/porta, host autoritativo, até4 jogadores humanos; sem matchmaking público fictício |
-| Preservar progresso | Save versão2 migra inventário, saldo, XP, recordes, nomes e configurações da v1 |
+O minimapa usa as posições reais dos atores e a câmera, com atualização limitada a cada0,15s; os cantos da arena, marcador do jogador, adversários e direção do movimento são verificados. Dois controles de BOOST são áreas reais de aceleração, não poderes inventados. A habilidade equipada possui cooldown/duração reais.
 
-## Otimização: comparação com carga equivalente
-
-Baseline: código anterior, commit `750f8ca`. Comparação controlada:10 cobras com40 segmentos cada e1000 energias; testes Linux no mesmo servidor. A redução da densidade padrão não foi usada para inflar essa comparação.
-
-| Medição | Antes | Depois | Redução aproximada |
-|---|---:|---:|---:|
-| Movimento/corpo40segmentos |43,88µs|20,19µs|54%|
-| Reconstrução do grid de corpos |217,27µs|120,40µs|45%|
-| Decisão da IA |94,05µs|15,67µs|83%|
-| Passo da arena |1079,80µs|494,89µs|54%|
-| Preparação CPU de comandos de desenho |3,745ms|0,732ms|80%|
-
-Detalhes, método e limites: [docs/PERFORMANCE_V1_1.md](docs/PERFORMANCE_V1_1.md). Esses números **não são FPS em Android**. O desenho foi exercitado com Xvfb/Mesa llvmpipe; não há medição de GPU, memória, temperatura ou bateria em celular.
-
-Auto no Android escolhe o orçamento Low/30FPS alvo:5bots e420energias. Medium usa7/650; High9/1000. Física permanece60Hz para resposta e movimento suaves. A meta de30/60FPS não é uma garantia de desempenho de aparelhos. A comida mantém brilho com um único sprite em batch; corpos também são instanciados em lotes.
+A conexão direta continua com host autoritativo, até quatro humanos, IP/porta do host na tela e erros reais de timeout/desconexão. Não há servidor público, matchmaking automático, ranking online ou backend de contas. O usuário escolheu conexão direta. Veja [docs/ONLINE.md](docs/ONLINE.md).
 
 ## Testes executados
 
-Comando: `./tools/test.sh`. Saída completa: [docs/test-results.txt](docs/test-results.txt).
+Comando: `./tools/test.sh`, saída0. Log: [docs/test-results.txt](docs/test-results.txt).
 
-| Suíte | Verificações | Resultado |
-|---|---:|---|
-| Perfil/economia/migração |79|Aprovadas, zero falhas|
-| Movimento/crescimento/8poderes/IA/colisões |46|Aprovadas, zero falhas|
-| Fluxo real de UI/gameplay/controles |119|Aprovadas, zero falhas|
-| Rede, dois processos OS/UDP real |24|Aprovadas, zero falhas|
-| **Total** |**268**|**Zero falhas**|
+| Suíte | Verificações aprovadas |
+|---|---:|
+| Perfil, compras, inventário e migração |79|
+| Movimento, controles, oito poderes, colisões, HUD e minimapa |72|
+| Fluxo real de interface/gameplay |169|
+| Dois processos OS com UDP real |25|
+| **Total** |**345**|
 
-A integração verifica oito skins/paginação/filtros/compras, áudio independente, boot sem frases, inglês, créditos, host/join reais, toque simultâneo pelo dispatcher, pausa, derrota, reinício, save e layouts1280×720/1600×720/1280×900. Ela detectou e confirmou correções de pausa duplicada por mouse emulado e callback de notificação após troca de tela.
+Zero falhas no conjunto final. A integração cobre novo lobby, START, oito ações da coleção, boot Emnio Games, animações, toque/hover, cooldowns, compra/equipamento, pausa, três toques independentes, derrota ELIMINATED, reinício, persistência e proporções1280×720/1600×720/1280×900. O minimapa foi verificado contra IDs/coordenadas reais e limite de atualização. Controles online testam também direção pequena já filtrada, sem segunda deadzone.
 
-Os testes de rede usam um cliente com a cena real `Main.tscn` e um host em processo separado, validando caminhos RPC compatíveis com o app/servidor headless. Verificam atribuição, movimento, comida, crescimento, habilidade/cooldown, encerramento do host e timeout. Snapshots comprimidos são fragmentados em blocos de950bytes, com interpolação no cliente e deltas de comida. Log: [docs/network-validation.txt](docs/network-validation.txt).
+Os testes encontraram e confirmaram correções de metadata de tween no primeiro toque e de recorte de3px na barra inferior. A captura final não apresentou erros de script ou vazamentos; houve apenas aviso de V-Sync não suportado pelo driver virtual.
 
-Quatro capturas reais do framebuffer atualizadas em [docs/screenshots](docs/screenshots). Nenhum erro de script ou vazamento na captura final; há apenas aviso de V-Sync não suportado pelo driver virtual. Áudio foi decodificado e analisado sem clipping/NaN/Inf; não houve avaliação auditiva em aparelho.
+Além das345 verificações, passaram **146 verificações sobre o conteúdo extraído do APK real**. Elas incluem comparação exata dos pixels importados das marcas, ícone, piso e24sprites; módulos compilados, fontes, áudio e configurações. Detalhes em [docs/android_v1_2_validation.md](docs/android_v1_2_validation.md).
 
-## Compilação e verificação Android
+## Desempenho: limites e comparação
+
+Os corpos e energia continuam instanciados em lotes. O minimapa é atualizado aproximadamente6,7vezes/s. A prévia do lobby usa um MultiMesh e duas extremidades; efeitos da plataforma/fundo são limitados a24Hz. Auto no Android mantém o orçamento Low: alvo30FPS de renderização,5bots/420energias, física60Hz.
+
+Comparação Linux controlada com dez cobras de quarenta segmentos e mil energias, contra a versão1.1:
+
+| Medida | v1.1 | v1.2 |
+|---|---:|---:|
+| Passo físico da arena |465,58µs|449,82µs|
+| Movimento/corpo individual |20,62µs|22,11µs|
+| Preparação CPU do desenho |799,01µs|1037,22µs|
+| Draw calls no quadro amostrado |81|104|
+
+O novo HUD solicitado acrescentou aproximadamente0,24ms de CPU de desenho neste servidor. **Não foi descrito como mais rápido que a UI anterior.** A simulação comparável permaneceu próxima ou melhor, e o desenho em lotes evita retornar ao custo antigo de centenas de sprites individuais. Medições e dados brutos: [docs/GAMEPLAY_V1_2.md](docs/GAMEPLAY_V1_2.md).
+
+Esses números não representam FPS Android. Não foram medidos GPU, memória, temperatura, bateria ou latência em celular. A qualidade visual maior tem custo; medições no aparelho continuam necessárias.
+
+## APK gerado e verificado
+
+- Android7/API24+, ARM64/ARMv7, OpenGL ES3; target API36.
+- `com.emnioggs.warserpent`, versão1.2.0/code3, landscape, full-screen/edge-to-edge.
+- Template release oficial verificado; manifesto não debuggable.
+- Mesma assinatura RSA das versões1.0/1.1; schemas de save continuam migráveis/preservados.
+- Permissão `INTERNET` para multiplayer; sem câmera, microfone ou armazenamento externo.
+- APK Signature Scheme v2/v3, CRCs, código executável, recursos e alinhamento16KB verificados.
+- Bibliotecas nativas idênticas ao template release oficial; correção estreita e reproduzível das authorities AndroidX seguida de nova assinatura.
+- Músicas menu/arena em loop,45,18s cada, com decodificação finita/não silenciosa; áudio não foi ouvido em dispositivo físico.
+
+Artefato local: `builds/WarSerpentIO-debug.apk` — o nome histórico não altera o modo release. Download publicado: `WarSerpentIO-v1.2.0.apk`. Tamanho/hash exatos: [docs/apk_validation.txt](docs/apk_validation.txt). Instruções: [README.md](README.md).
 
 ```sh
 ./tools/setup_android.sh
@@ -74,23 +76,18 @@ python3 tools/validate_android.py
 python3 tools/package_source.py
 ```
 
-O helper usa o template **release** oficial, com checksum verificado, e a chave local original fora do projeto. Depois corrige o defeito conhecido de authorities duplicadas do AndroidX no exportador Godot4.6.3, realinha, assina e verifica o APK. O certificado deve coincidir com a v1.0; o build é recusado se a identidade mudar ou se o APK for debuggable.
+O build confere o certificado original e recusa atualizações com identidade diferente. Exporta em diretório temporário e só substitui o APK entregue depois das verificações. Java/keytool e SDK existentes foram reutilizados; nenhum SDK foi reinstalado. Gradle/javac/NDK não são necessários para templates diretos.
 
-Além das268 verificações de lógica/fluxo/rede, passaram58 verificações sobre recursos extraídos do APK real. Verificações independentes: assinatura v2/v3, package/versão, launcher, orientação, INTERNET como permissão necessária ao multiplayer, providers distintos, CRC, código compilado, catálogo/8skins, duas músicas, fontes/licenças, configuração de boot/fullscreen, bibliotecas release e alinhamento16KB ARM64. Detalhes: [apk_validation.txt](docs/apk_validation.txt) e [toolchain notes](docs/toolchain_notes.md).
+## Limitações e instalação
 
-Sem Gradle/javac/NDK: exportação com template pré-compilado. Java/keytool existentes, Build Tools35.0.1, Platform Tools37.0.1; template target36. Não foram substituídas ferramentas globais e verificação TLS/checksums permaneceu ativa.
+`adb devices -l` não apresentou dispositivo e não há emulador disponível. **O APK não foi instalado nem executado em Android nesta sessão.** Metadados e assinatura permitem atualizar as versões anteriores, mas a instalação `adb install -r` e retenção real de dados no celular não foram executadas.
 
-## Limitações restantes
+Instale por cima da versão anterior, sem desinstalar primeiro. O logo visual padrão Godot foi desativado; Android12+ ainda pode exibir brevemente sua própria splash com o ícone do aplicativo. Toque físico, recortes de tela de cada fabricante, Wi-Fi/WAN e desempenho precisam de validação em aparelhos.
 
-- `adb devices -l` retornou vazio; `/dev/kvm` não está disponível. APK não foi instalado nem executado em Android nesta máquina.
-- Wi-Fi real, touchscreen físico, atualização sobre a instalação anterior e WAN/NAT não foram testados. Conexões diretas pela internet dependem de host e porta UDP acessíveis.
-- Não há servidor público, matchmaking automático, conta, relay, ranking online ou economia autoritativa persistente. Salas confiam no host; se ele sai ou termina a partida, a sala fecha. [docs/ONLINE.md](docs/ONLINE.md).
-- Não é uma publicação Play Store. O modo da engine é release, mas o certificado continua sendo o de desenvolvimento para permitir atualizar a instalação anterior.
-- Permanecem oito skins, uma arena e progressão local. Gems/fragments ainda não possuem mercado próprio; skins/arenas adicionais continuam no roadmap.
-- Medições Android reais e ajustes adicionais para o aparelho que apresentou travamentos continuam necessários; a melhoria de CPU medida não elimina todos os possíveis gargalos de GPU/driver.
+## Código, arte e licenças
 
-## Fontes e licenças
+O ZIP contém código, cenas, dados, testes, geradores e documentação, incluindo74PNG,2OGG e14WAV. Exclui caches, SDK/templates, saves e chaves privadas. Logo War Serpent.io, ícone e marca Emnio Games foram gerados originalmente para este projeto; sprites, piso e materiais são autoria procedural original. Não foram incorporados arquivos das imagens de referência.
 
-ZIP completo com código, dados,59PNG,2OGG,14WAV, cenas, testes, relatórios e helpers. Cache, SDK, templates, saves pessoais e chaves privadas são excluídos. Código MIT; arte/áudio autorais CC0 conforme [assets/LICENSE.md](assets/LICENSE.md); fontes DejaVu e Godot preservam seus avisos próprios.
+Código/documentação MIT; arte/áudio conforme [assets/LICENSE.md](assets/LICENSE.md); licenças DejaVu e Godot preservadas e acessíveis nos créditos. O ZIP é verificado por CRC e conteúdo obrigatório, e uma cópia extraída é importada/testada antes da entrega.
 
-O ZIP foi extraído em um diretório temporário sem caches; imports novos e as119 verificações de fluxo passaram na cópia extraída. Evidência em `docs/source-archive-validation.txt`.
+A cópia extraída do ZIP, sem cache, passou novos imports e169 verificações de fluxo com saída0. Evidência em `docs/source-archive-validation.txt`.

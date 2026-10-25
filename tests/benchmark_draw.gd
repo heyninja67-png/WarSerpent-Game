@@ -2,6 +2,9 @@ extends SceneTree
 
 class TimedArena extends ArenaGame:
 	var samples: Array[float] = []
+	func _process(delta: float) -> void:
+		clock += delta
+		queue_redraw()
 	func _draw() -> void:
 		var start := Time.get_ticks_usec()
 		super._draw()

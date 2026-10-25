@@ -17,10 +17,11 @@ PASS: client handshake assigns distinct authoritative snake
 PASS: client receives ongoing authoritative snapshots
 PASS: client sends steering inputs
 PASS: remote steering produces visible synchronized motion
+PASS: tiny active joystick direction reaches host without a second deadzone
 PASS: server preserves selected skin and nickname
 PASS: food growth and ability cooldown synchronize from host
 PASS: real initial food data synchronized
-NETWORK client: 8 checks, 0 failures
+NETWORK client: 9 checks, 0 failures
 
 --- disconnect-host.log ---
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
@@ -47,4 +48,4 @@ PASS: ENet peer created
 PASS: connection failure returns honest network error without match rewards
 NETWORK unreachable: 2 checks, 0 failures
 
-MULTIPLAYER PASS: real two-process UDP movement, food, cooldowns, host disconnect and timeout; logs=/tmp/warserpent-network-34xnw71r
+MULTIPLAYER PASS: real two-process UDP movement, food, cooldowns, host disconnect and timeout; logs=/tmp/warserpent-network-7bd3lhgn

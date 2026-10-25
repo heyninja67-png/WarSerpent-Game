@@ -41,6 +41,34 @@ func run() -> void:
 	for i in range(1, snake.segments.size()):
 		spacing_ok = spacing_ok and snake.segments[i].distance_to(snake.segments[i - 1]) > 9.5 and snake.segments[i].distance_to(snake.segments[i - 1]) <= 10.01
 	check(spacing_ok, "smooth curved path preserves spacing")
+	var responsive := make_snake()
+	responsive.advance(0.2, PI / 2, false)
+	var heavy := make_snake()
+	heavy.mass = 1500
+	heavy.advance(0.2, PI / 2, false)
+	check(responsive.heading > 0.9 and responsive.heading > heavy.heading, "small snake turns responsively while large snake keeps readable radius")
+	var settling := make_snake()
+	settling.advance(0.1, 0.02, false)
+	check(absf(settling.heading - 0.02) < 0.00001, "steering reaches nearby target without overshoot")
+	settling.heading = PI - 0.01
+	settling.advance(0.1, -PI + 0.01, false)
+	check(absf(angle_difference(settling.heading, -PI + 0.01)) < 0.00001, "steering crosses angular wrap by shortest route")
+	var steer30 := make_snake()
+	var steer60 := make_snake()
+	for i in range(60):
+		steer60.advance(1.0 / 60, PI / 2, false)
+	for i in range(30):
+		steer30.advance(1.0 / 30, PI / 2, false)
+	check(absf(steer30.heading - steer60.heading) < 0.0001 and steer30.position.distance_to(steer60.position) < 4.0, "30 and 60 Hz steering settle consistently")
+	var rapid := make_snake(6)
+	rapid.mass = 500
+	rapid.activate()
+	for i in range(360):
+		rapid.advance(1.0 / 60, PI / 2 if i % 24 < 12 else -PI / 2, i % 3 != 0)
+	var rapid_stable := rapid.position.is_finite()
+	for i in range(1, rapid.segments.size()):
+		rapid_stable = rapid_stable and rapid.segments[i].distance_to(rapid.segments[i - 1]) > 9.0 and rapid.segments[i].distance_to(rapid.segments[i - 1]) <= 10.01
+	check(rapid_stable, "rapid boost and dash direction changes keep body connected")
 	var slow_frame := make_snake()
 	for i in range(60):
 		slow_frame.advance(1.0 / 30, 0, false)
@@ -119,6 +147,43 @@ func run() -> void:
 	game.set_physics_process(false)
 	game.set_process(false)
 	check(game.snakes.size() == 6 and game.foods.size() == 420, "low profile starts player, five bots and pooled energy")
+	check(game.hud_state().protection_remaining > 0 and game.hud_state().danger == 0, "HUD exposes initial spawn protection and safe-center state")
+	var center := game.joystick_center(game.get_viewport_rect().size)
+	game.update_joystick(center + Vector2(11, 0), game.get_viewport_rect().size)
+	check(game.joystick_vector == Vector2.ZERO, "joystick center noise below enter radius cannot drift")
+	game.update_joystick(center + Vector2(15, 0), game.get_viewport_rect().size)
+	game.update_joystick(center + Vector2(11, 0), game.get_viewport_rect().size)
+	check(game.joystick_vector.x > 0 and game.joystick_vector.length() < 0.12, "hysteresis retains a deliberate small held direction")
+	game.update_joystick(center + Vector2(7, 0), game.get_viewport_rect().size)
+	game.update_joystick(center + Vector2(11, 0), game.get_viewport_rect().size)
+	check(game.joystick_vector == Vector2.ZERO, "return to center releases steering until enter threshold crossed again")
+	game.update_joystick(center + Vector2(1000, 1000), game.get_viewport_rect().size)
+	check(game.joystick_vector.length() <= 1.00001, "joystick drag outside radius stays normalized")
+	game.reset_controls()
+	game.player.position = Vector2(1280, 0)
+	check(game.boundary_danger() > 0.5, "boundary danger rises before reaching lethal arena edge")
+	game.player.position = Vector2.ZERO
+	check(game.boundary_danger() == 0, "boundary warning clears when returning toward center")
+	var map_state: Dictionary = game.minimap_state()
+	var live_player_markers := 0
+	for marker: Dictionary in map_state.markers:
+		if marker.player:
+			live_player_markers += 1
+	check(map_state.markers.size() == game.snakes.size() and live_player_markers == 1, "circular minimap contains actual live actors and one player marker")
+	var map_inside := true
+	for marker: Dictionary in map_state.markers:
+		map_inside = map_inside and marker.position.is_finite() and marker.position.distance_to(map_state.center) <= map_state.radius
+	check(map_inside and game.minimap_world_to_screen(Vector2(1400, 1400)).distance_to(map_state.center) <= map_state.radius, "minimap world mapping stays within circular boundary")
+	var previous_refresh: int = map_state.refresh_count
+	game.snakes[1].position = Vector2(600, 300)
+	game._process(0.04)
+	check(game.minimap_state().refresh_count == previous_refresh, "minimap cache does not rebuild on every render frame")
+	game._process(0.12)
+	var mapped_enemy := Vector2.ZERO
+	for marker: Dictionary in game.minimap_state().markers:
+		if marker.id == game.snakes[1].id:
+			mapped_enemy = marker.position
+	check(game.minimap_state().refresh_count == previous_refresh + 1 and mapped_enemy.distance_to(game.minimap_world_to_screen(Vector2(600, 300))) < 0.001, "minimap refreshes throttled cache from changed actor positions")
 	var touch_joy := InputEventScreenTouch.new()
 	touch_joy.index = 2
 	touch_joy.position = game.joystick_center(game.get_viewport_rect().size) + Vector2(50, 0)
@@ -141,6 +206,14 @@ func run() -> void:
 	check(game.joystick_id == -1 and game.joystick_vector == Vector2.ZERO and game.boost_id == 5, "releasing joystick preserves held boost touch")
 	touch_boost.pressed = false
 	game._input(touch_boost)
+	var center_boost_touch := InputEventScreenTouch.new()
+	center_boost_touch.index = 8
+	center_boost_touch.position = game.boost_secondary_center(game.get_viewport_rect().size)
+	center_boost_touch.pressed = true
+	game._input(center_boost_touch)
+	check(game.boost_id == 8, "center boost widget is bound to the real held boost control")
+	center_boost_touch.pressed = false
+	game._input(center_boost_touch)
 	game.player.cooldown = 0
 	game.player.active_time = 0
 	var pause_touch := InputEventScreenTouch.new()
@@ -155,6 +228,17 @@ func run() -> void:
 	emulated_mouse.pressed = true
 	game._input(emulated_mouse)
 	check(game.paused, "touch pause ignores duplicate Android mouse emulation")
+	check(game.joystick_id == -1 and game.boost_id == -1 and game.skill_id == -1 and not game._steering_active, "pause clears every held touch identity and steering latch")
+	game.toggle_pause()
+	game.joystick_id = 2
+	game.boost_id = 4
+	game.skill_id = 5
+	game.mouse_boost = true
+	game.joystick_vector = Vector2.RIGHT
+	game._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(game.joystick_id == -1 and game.boost_id == -1 and game.skill_id == -1 and game.joystick_vector == Vector2.ZERO and not game.mouse_boost, "application focus loss clears controls without stuck boost")
+	game._notification(Node.NOTIFICATION_APPLICATION_PAUSED)
+	check(game.paused, "Android application pause suspends active local gameplay")
 	game.toggle_pause()
 	var before: int = game.player.score
 	game.foods[0].p = game.player.position
@@ -163,6 +247,14 @@ func run() -> void:
 	game.rebuild_food_grid()
 	game.collect_food(game.player)
 	check(game.player.score >= before + 5 and not game.foods[0].active, "arena collection deactivates food and awards real mass")
+	check(game.hud_state().pickup_total >= 5 and game.hud_state().pickup_remaining > 0, "pickup feedback aggregates actual collected energy")
+	game.paused = true
+	var feedback_left: float = game.hud_state().pickup_remaining
+	game._process(0.2)
+	check(game.hud_state().pickup_remaining == feedback_left, "pickup feedback freezes while paused")
+	game.paused = false
+	game._process(0.8)
+	check(game.hud_state().pickup_total == 0 and game.hud_state().pickup_remaining == 0, "pickup feedback expires instead of accumulating UI objects")
 	var enemy: SnakeModel = game.snakes[1]
 	game.player.skin = 1
 	game.player.cooldown = 0
@@ -227,9 +319,34 @@ func run() -> void:
 	enemy.position = Vector2(200, 0)
 	enemy.segments = PackedVector2Array([Vector2(200,0), Vector2(190,0), Vector2(180,0), Vector2(170,0), Vector2.ZERO])
 	game.rebuild_body_grid()
+	game.player.skin = 3
+	game.player.cooldown = 0
+	game.player.activate()
+	game.check_collisions(game.player)
+	check(game.player.alive and not game.player.shield and game._shield_feedback_remaining > 0, "actual body collision consumes shield and triggers bounded feedback")
+	game.player.invulnerable = 0
 	game.check_collisions(game.player)
 	check(not game.player.alive and enemy.kills == 1, "head-body collision eliminates snake and credits killer")
 	check(game.death_delay > 0, "player death begins defeat transition")
+	game.player.alive = true
+	enemy.alive = true
+	game.player.invulnerable = 0
+	enemy.invulnerable = 0
+	enemy.shield = false
+	game.player.position = Vector2.ZERO
+	enemy.position = Vector2(10, 0)
+	game.player.segments = PackedVector2Array([Vector2.ZERO, Vector2(-10, 0), Vector2(-20, 0)])
+	enemy.segments = PackedVector2Array([Vector2(10, 0), Vector2(20, 0), Vector2(30, 0)])
+	game.rebuild_body_grid()
+	game.check_collisions(game.player)
+	check(not game.player.alive and not enemy.alive, "unprotected head-to-head collision eliminates both consistently")
+	game.player.alive = true
+	enemy.alive = true
+	game.player.invulnerable = 0
+	enemy.invulnerable = 1
+	game.rebuild_body_grid()
+	game.check_collisions(game.player)
+	check(not game.player.alive and enemy.alive, "protected head survives head-to-head without extending protection")
 	var result: Dictionary = {}
 	game.finished.connect(func(data: Dictionary): result.merge(data))
 	game.end_game(false)

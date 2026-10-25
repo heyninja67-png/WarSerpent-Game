@@ -28,6 +28,7 @@ func run() -> void:
 	model.mass = 0
 	while model.segment_count() < 40:
 		model.mass += 1
+	var fixed_mass := model.mass
 	var start := Time.get_ticks_usec()
 	for i in range(12000):
 		model.advance(1.0 / 60.0, float(i) * 0.01, false)
@@ -43,6 +44,9 @@ func run() -> void:
 	start = Time.get_ticks_usec()
 	for frame in range(3600):
 		for snake in game.snakes:
+			# Keep the timed workload at 40 segments throughout. Faster steering can
+			# collect more food, which otherwise silently changes the benchmark load.
+			snake.mass = fixed_mass
 			snake.invulnerable = 1000
 		game.joystick_vector = Vector2.from_angle(float(frame) * 0.012)
 		game._physics_process(1.0 / 60)
@@ -53,6 +57,7 @@ func run() -> void:
 	benchmark_result["arena_step_us"] = (Time.get_ticks_usec() - start) / 3600.0
 	benchmark_result["food_count"] = game.foods.size()
 	benchmark_result["snake_count"] = game.snakes.size()
+	benchmark_result["body_segments_per_snake"] = 40
 	benchmark_result["starter_segments"] = Snake.new().segment_count()
 	print("BENCHMARK ", JSON.stringify(benchmark_result))
 	var path := "/tmp/warserpent-benchmark.json"

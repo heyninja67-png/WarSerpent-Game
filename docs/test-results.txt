@@ -87,6 +87,11 @@ PASS constant movement covers expected distance
 PASS straight movement maintains axis
 PASS body is sampled by distance with consistent segment spacing
 PASS smooth curved path preserves spacing
+PASS small snake turns responsively while large snake keeps readable radius
+PASS steering reaches nearby target without overshoot
+PASS steering crosses angular wrap by shortest route
+PASS 30 and 60 Hz steering settle consistently
+PASS rapid boost and dash direction changes keep body connected
 PASS movement is time based at 30 FPS
 PASS energy grows snake and awards score
 PASS boost increases actual movement speed
@@ -112,11 +117,29 @@ PASS fixed ring history wraps while long curved body keeps spacing
 PASS spatial query includes neighboring and negative cells
 PASS spatial hash resets without stale collisions
 PASS low profile starts player, five bots and pooled energy
+PASS HUD exposes initial spawn protection and safe-center state
+PASS joystick center noise below enter radius cannot drift
+PASS hysteresis retains a deliberate small held direction
+PASS return to center releases steering until enter threshold crossed again
+PASS joystick drag outside radius stays normalized
+PASS boundary danger rises before reaching lethal arena edge
+PASS boundary warning clears when returning toward center
+PASS circular minimap contains actual live actors and one player marker
+PASS minimap world mapping stays within circular boundary
+PASS minimap cache does not rebuild on every render frame
+PASS minimap refreshes throttled cache from changed actor positions
 PASS three simultaneous touch identities steer, boost and use skill
 PASS touch ability button changes actual ability state
 PASS releasing joystick preserves held boost touch
+PASS center boost widget is bound to the real held boost control
 PASS touch pause ignores duplicate Android mouse emulation
+PASS pause clears every held touch identity and steering latch
+PASS application focus loss clears controls without stuck boost
+PASS Android application pause suspends active local gameplay
 PASS arena collection deactivates food and awards real mass
+PASS pickup feedback aggregates actual collected energy
+PASS pickup feedback freezes while paused
+PASS pickup feedback expires instead of accumulating UI objects
 PASS flame burst slows nearby opponents
 PASS frost ability creates persistent slowing trail
 PASS frozen trail slows other snakes
@@ -125,15 +148,19 @@ PASS solar magnet actually collects energy beyond normal radius
 PASS remote control advances same model and consumes skill tap
 PASS network clients can disable local authoritative simulation
 PASS bot steers away from lethal arena edge
+PASS actual body collision consumes shield and triggers bounded feedback
 PASS head-body collision eliminates snake and credits killer
 PASS player death begins defeat transition
+PASS unprotected head-to-head collision eliminates both consistently
+PASS protected head survives head-to-head without extending protection
 PASS result signal supplies actual match statistics
-GAMEPLAY TESTS: 46 checks, 0 failures
+GAMEPLAY TESTS: 72 checks, 0 failures
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
 
 PASS: startup begins with custom Emnio splash
 PASS: engine boot logo is disabled
-PASS: first animated splash uses Emnio emblem and wordmark
+PASS: project reports version1.2.0
+PASS: first animated splash uses the new Emnio Games studio artwork
 PASS: loading counter measures actual resource jobs
 PASS: splash contains no loading status phrases
 PASS: short splash reaches menu
@@ -144,15 +171,42 @@ PASS: menu uses actual looping Ogg music
 PASS: menu music plays by default
 PASS: menu controls fit current viewport
 PASS: menu presents English text
+PASS: functional button exists: CHANGE SERPENT
+PASS: CHANGE SERPENT toolbar opens the real collection
+PASS: functional button exists: BACK
+PASS: lobby collection rail exposes all eight actual skins
+PASS: locked rail skin opens its actual market page
+PASS: functional button exists: ‹
+PASS: functional button exists: BACK
+PASS: lobby presents the equipped serpent in its animated hero pose
+PASS: selected serpent occupies the center of the lobby
+PASS: all five functional features occupy the lobby's left column
+PASS: lobby exposes the real START action
+PASS: START action occupies the lobby's lower right
+PASS: menu has an animated atmospheric layer
+PASS: equipped lobby serpent visibly changes pose over time
+PASS: ambient animation advances while menu is visible
 PASS: functional button exists: SERPENTS
+PASS: dispatched pointer press produces visible button feedback
+PASS: button feedback keeps controls inside viewport
 PASS: collection opens
 PASS: collection renders four previews per page
 PASS: first collection page contains skins0 through3
 PASS: first collection page stays inside screen
+PASS: collection page exposes four readable power timing labels
+PASS: Volt Serpent card reports real duration and cooldown
+PASS: Inferno Viper card reports real duration and cooldown
+PASS: Frost Fang card reports real duration and cooldown
+PASS: Cyber Reaper card reports real duration and cooldown
 PASS: functional button exists: ›
 PASS: next button changes collection page
 PASS: second page exposes all four additional skins
 PASS: second page fits screen and uses English descriptions
+PASS: collection page exposes four readable power timing labels
+PASS: Shadow Phantom card reports real duration and cooldown
+PASS: Solar Wyrm card reports real duration and cooldown
+PASS: Neon Samurai card reports real duration and cooldown
+PASS: Toxic Fang card reports real duration and cooldown
 PASS: functional button exists: ‹
 PASS: functional button exists: 150 COINS
 PASS: purchase opens genuine confirmation dialog
@@ -202,7 +256,7 @@ PASS: profile editor saves name
 PASS: functional button exists: BACK
 PASS: functional button exists: OFFLINE
 PASS: mode selector exposes actual online workflow
-PASS: functional button exists: PLAY ONLINE  ›
+PASS: functional button exists: START ONLINE
 PASS: online page exposes host and join actions
 PASS: online connection page is English and fits viewport
 PASS: functional button exists: JOIN ROOM
@@ -224,19 +278,40 @@ PASS: collection controls visible at physical(1600, 720)
 PASS: menu controls visible at physical(1280, 900)
 PASS: menu artwork fills viewport without black bars at(1280, 900)
 PASS: collection controls visible at physical(1280, 900)
-PASS: functional button exists: PLAY  ›
+PASS: functional button exists: START
 PASS: play starts actual offline arena
 PASS: equipped skin and saved name reach gameplay
 PASS: player starts as a short serpent rather than large adult
 PASS: arena creates real energy and bot competitors
 PASS: arena music track changes while preserving independent mute
+PASS: spawn HUD reflects actual temporary protection
+PASS: central spawn has no false boundary danger
+PASS: circular minimap fits the upper left of the arena
+PASS: minimap exposes a finite player position inside its circle
+PASS: minimap identifies the actual player and all initial opponents
+PASS: minimap markers use actual snake IDs and stay inside the circle
+PASS: minimap marker directions agree with opponents' real world positions
+PASS: actual minimap transform centers the world and keeps all arena corners visible
 PASS: snake continuously moves through physics updates
+PASS: protection indicator counts down with simulation time
+PASS: actual minimap refresh count respects its capped update budget
+PASS: minimap player indicator updates with real movement in the correct direction
 PASS: food collision increases real score
+PASS: real energy collection activates pickup feedback
 PASS: dispatcher delivers simultaneous joystick and boost touches
 PASS: third touch activates power without dropping joystick or boost
+PASS: active ability has a live HUD duration indicator
+PASS: releasing boost preserves steering and ability fingers
+PASS: releasing steering preserves independent boost and ability fingers
+PASS: releasing ability preserves held boost
 PASS: touch release clears control owners
+PASS: secondary center BOOST control drives actual acceleration
 PASS: dispatched pause touch pauses simulation
+PASS: pause clears every held touch owner
 PASS: paused simulation stops movement
+PASS: approaching real arena boundary triggers a graduated warning
+PASS: boundary HUD intensifies as lethal edge approaches
+PASS: boundary warning clears when returning to safe center
 PASS: continue touch resumes gameplay
 PASS: lethal world boundary reaches clear ELIMINATED result
 PASS: ordinary defeat never claims network connection loss
@@ -245,21 +320,23 @@ PASS: collected score updates record and real rewards
 PASS: results are English and controls fit screen
 PASS: functional button exists: PLAY AGAIN
 PASS: restart begins fresh playable serpent
+PASS: standalone ability touch is not intercepted by the steering region
 PASS: abandon returns to menu without farming rewards
 PASS: new profile instance reloads saved state
 PASS: name inventory and equipped skin survive reopen
 PASS: economy and record survive reopen
 PASS: graphics and independent audio preferences survive reopen
-FLOW RESULT: 119 passed, 0 failed
+FLOW RESULT: 169 passed, 0 failed
 --- client-host.log ---
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
 
 PASS: ENet peer created
+PASS: host HUD caches the actual room port and LAN connection hint
 PASS: server accepted real remote human
 PASS: server accepted rate-limited input packets
 PASS: server awarded food to remote player
 PASS: server applied remote skill request and cooldown
-NETWORK host: 5 checks, 0 failures
+NETWORK host: 6 checks, 0 failures
 
 --- client.log ---
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
@@ -269,20 +346,22 @@ PASS: client handshake assigns distinct authoritative snake
 PASS: client receives ongoing authoritative snapshots
 PASS: client sends steering inputs
 PASS: remote steering produces visible synchronized motion
+PASS: tiny active joystick direction reaches host without a second deadzone
 PASS: server preserves selected skin and nickname
 PASS: food growth and ability cooldown synchronize from host
 PASS: real initial food data synchronized
-NETWORK client: 8 checks, 0 failures
+NETWORK client: 9 checks, 0 failures
 
 --- disconnect-host.log ---
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
 
 PASS: ENet peer created
+PASS: host HUD caches the actual room port and LAN connection hint
 PASS: server accepted real remote human
 PASS: server accepted rate-limited input packets
 PASS: server awarded food to remote player
 PASS: server applied remote skill request and cooldown
-NETWORK host: 5 checks, 0 failures
+NETWORK host: 6 checks, 0 failures
 
 --- disconnect.log ---
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
@@ -298,5 +377,5 @@ PASS: ENet peer created
 PASS: connection failure returns honest network error without match rewards
 NETWORK unreachable: 2 checks, 0 failures
 
-MULTIPLAYER PASS: real two-process UDP movement, food, cooldowns, host disconnect and timeout; logs=/tmp/warserpent-network-ryistb47
-Logs da execução: /tmp/warserpent-flow-tests.CXIaZp
+MULTIPLAYER PASS: real two-process UDP movement, food, cooldowns, host disconnect and timeout; logs=/tmp/warserpent-network-hvit02yh
+Logs da execução: /tmp/warserpent-flow-tests.gz6xur

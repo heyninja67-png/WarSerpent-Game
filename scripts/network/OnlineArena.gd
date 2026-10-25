@@ -268,7 +268,7 @@ func _physics_process(delta: float) -> void:
 			var keyboard := Vector2(float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)), float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN)) - float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 			if keyboard.length_squared() > 0:
 				direction = keyboard.normalized()
-			var target_angle := direction.angle() if direction.length() > 0.12 else player.heading
+			var target_angle := direction.angle() if direction.length_squared() > 0.000001 else player.heading
 			var request_boost := not paused and (boost_id >= 0 or mouse_boost or Input.is_physical_key_pressed(KEY_SPACE))
 			_steer.rpc_id(1, target_angle, request_boost, pending_skill and not paused)
 			pending_skill = false

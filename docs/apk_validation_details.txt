@@ -20,7 +20,7 @@ Signer #1 public key MD5 digest: e8cead44bc7c9e3eb1338c325a24b043
 exit=0
 
 $ /workspace/toolchains/android-sdk/build-tools/35.0.1/aapt dump badging /workspace/WarSerpent-Game/builds/WarSerpentIO-debug.apk
-package: name='com.emnioggs.warserpent' versionCode='2' versionName='1.1.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
+package: name='com.emnioggs.warserpent' versionCode='3' versionName='1.2.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
 install-location:'auto'
 sdkVersion:'24'
 targetSdkVersion:'36'
@@ -142,8 +142,8 @@ exit=0
 $ /workspace/toolchains/android-sdk/build-tools/35.0.1/aapt dump xmltree /workspace/WarSerpent-Game/builds/WarSerpentIO-debug.apk AndroidManifest.xml
 N: android=http://schemas.android.com/apk/res/android
   E: manifest (line=2)
-    A: android:versionCode(0x0101021b)=(type 0x10)0x2
-    A: android:versionName(0x0101021c)="1.1.0" (Raw: "1.1.0")
+    A: android:versionCode(0x0101021b)=(type 0x10)0x3
+    A: android:versionName(0x0101021c)="1.2.0" (Raw: "1.2.0")
     A: android:installLocation(0x010102b7)=(type 0x10)0x0
     A: android:compileSdkVersion(0x01010572)=(type 0x10)0x24
     A: android:compileSdkVersionCodename(0x01010573)="16" (Raw: "16")
@@ -255,11 +255,12 @@ exit=0
 
 Packaged Android runtime arguments: ["--xr_mode_regular", "--xr-mode", "off", "--fullscreen", "--edge_to_edge", "--background_color", "#000000"]
 
-$ godot --headless --path /tmp/warserpent-apk-resources-o7doo2jy/bundle --script /tmp/warserpent-apk-resources-o7doo2jy/check_packaged_game.gd
+$ godot --headless --path /tmp/warserpent-apk-resources-g3jqfcal/bundle --script /tmp/warserpent-apk-resources-g3jqfcal/check_packaged_game.gd
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
 
 PACKAGED_HOST_HINT=LAN ROOM  172.31.2.94:24680
-PACKAGED_GAME_RESOURCE_CHECKS=58 FAILURES=0
+PACKAGED_BRANDING={"arena_floor":{"height":512,"pixel_sha256":"40a3c7a654554d7f2aca5b8cc88d6fd8e446bd0d0fdaf3b4c2164e7b4bc6342f","width":512},"icon":{"height":1254,"pixel_sha256":"03d031de5eda1b50e70c8c9c383c9bbded3f42385f3127f779b1e71892ca3ec1","width":1254},"logo":{"height":809,"pixel_sha256":"13e9b52a5fbc05a8cbe91101838827237be992652e8b75c76c53a991a0f65a8d","width":1942},"skin_0_body":{"height":64,"pixel_sha256":"c4257245d8e94cd0ebc973a648e0ff148aa903c9fec1b25e025eef069dd62f53","width":64},"skin_0_head":{"height":76,"pixel_sha256":"ce100b3f48980d2a521c15b83bcd5acc9a26e3de4478ff0a8ff78ce6784299f2","width":96},"skin_0_tail":{"height":64,"pixel_sha256":"3da8d4bc98fb217d024708b60a5ba93cbc7ee100b02e774334c0540c39763ebc","width":96},"skin_1_body":{"height":64,"pixel_sha256":"f023cd4a39f73830898a2b87f8ccb01b7e19132cbf6efb765a2ea9888187ea41","width":64},"skin_1_head":{"height":76,"pixel_sha256":"2916d8100fedbe1eba2dcfdb61611a370a770d9886cdfdd233bd9e6bca36dd9a","width":96},"skin_1_tail":{"height":64,"pixel_sha256":"ab38e9d36a19ade1b8049cf8fcad575c6be515c77fdd33bef9a9e359f1b378c3","width":96},"skin_2_body":{"height":64,"pixel_sha256":"3943dd372940b554006134488c93207855015ef4e1e03acbe6689f2121056b2e","width":64},"skin_2_head":{"height":76,"pixel_sha256":"0bf7fbf55bb89d07d1ea69267e0cb0285f1b70d3b2c6b8dbbd0c270e0a3b1df2","width":96},"skin_2_tail":{"height":64,"pixel_sha256":"ad6e0221268dc22e447932b1e87e469433110d836977a7edf0054e8736f948d6","width":96},"skin_3_body":{"height":64,"pixel_sha256":"26fcf4e94f83284f1110ffa034d14f2883396d462aeb45d640a13f9b3a15e575","width":64},"skin_3_head":{"height":76,"pixel_sha256":"7c7e555a6e9fa0ae9dd1ce3c99b7a1990b92f669af913dfb774f0d787f9b3fbc","width":96},"skin_3_tail":{"height":64,"pixel_sha256":"cb2cf7f33fc6fe29f01396bb4dfd6606c311a5873dc4b70257265818200e5df5","width":96},"skin_4_body":{"height":64,"pixel_sha256":"2a01759c0a1087792f217a66dfa9da5675fb86312710780882f4e2ca581e6d89","width":64},"skin_4_head":{"height":76,"pixel_sha256":"d5d65874badffa19eb6b16fc356cda13768fdf8ca556a83067b2980521b478c3","width":96},"skin_4_tail":{"height":64,"pixel_sha256":"3387d574f5ad72c25892058751eb588f1df97f1da75821998448e568748974ae","width":96},"skin_5_body":{"height":64,"pixel_sha256":"be79ff3d074ec464a4e6e07934887a358b6f68c5d1e3675c80886c8cffd9a4a6","width":64},"skin_5_head":{"height":76,"pixel_sha256":"3621f5b3957485ddf8fbd4ebfc4236270a13d13ad80a47f021cdc75660581aba","width":96},"skin_5_tail":{"height":64,"pixel_sha256":"80e1547103d5c4b7cc6ef27a47c2b37278450d6babbc2f797a01ae8b0337f30b","width":96},"skin_6_body":{"height":64,"pixel_sha256":"e4a4c7a99178fab7f3c10f1b29edd69b59951e9cd7b5af84033959f4f07ff34b","width":64},"skin_6_head":{"height":76,"pixel_sha256":"a4a17bcd03f12f5fcba2176f20eff7842fc87ae559690030733aec3f46bffd9f","width":96},"skin_6_tail":{"height":64,"pixel_sha256":"316416b833d734f891698fb33a51c7171cddfc16ea6789438589abd092b47eb2","width":96},"skin_7_body":{"height":64,"pixel_sha256":"c13a9b741ca72a958db7f15f0b58a4054672be5e18830ce71b03af9f9eaee631","width":64},"skin_7_head":{"height":76,"pixel_sha256":"3982b911cb707975611340ca2e05c7e9562254b8699afb6d3411cdfe0abf66da","width":96},"skin_7_tail":{"height":64,"pixel_sha256":"1aa4c1ad47126f08a5081c3cb56abc475d735a880da3acbb5b2f4c6042e63d5b","width":96},"studio":{"height":793,"pixel_sha256":"3fcafd17dbfedc0a292bbbea73e7d67e164467172680d37183a34e02f328a043","width":1983}}
+PACKAGED_GAME_RESOURCE_CHECKS=146 FAILURES=0
 PACKAGED_MUSIC={"arena":{"decoded_peak":0.687072932720184,"duration":45.1764640808105,"loop":true},"menu":{"decoded_peak":0.767738938331604,"duration":45.1764640808105,"loop":true}}
 PACKAGED_ENGINE_BOOT_IMAGE=false; ASPECT=expand; NATIVE_CUSTOM_ICON_DENSITIES=6
 
@@ -267,7 +268,7 @@ exit=0
 
 Official release-template native payload verified SHA256 c4c2fe5cbcb1fba0003a31fc7ab29a9bb12df6cc187ec45a806462540e83d93b lib/arm64-v8a/libc++_shared.so
 
-$ readelf -lW /tmp/warserpent-elf-wjk6cabz/lib/arm64-v8a/libc++_shared.so
+$ readelf -lW /tmp/warserpent-elf-j5q4ls5i/lib/arm64-v8a/libc++_shared.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0
@@ -305,7 +306,7 @@ exit=0
 
 Official release-template native payload verified SHA256 b4085c7f15575246530474b1fa4291c70e4a8177173d2d6fc597300208cac282 lib/arm64-v8a/libgodot_android.so
 
-$ readelf -lW /tmp/warserpent-elf-wjk6cabz/lib/arm64-v8a/libgodot_android.so
+$ readelf -lW /tmp/warserpent-elf-j5q4ls5i/lib/arm64-v8a/libgodot_android.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0
@@ -339,7 +340,7 @@ exit=0
 
 Official release-template native payload verified SHA256 af383654daf4cf0829615460419a180f84edd9d8bf51aa0f81ed0db811bf8491 lib/armeabi-v7a/libc++_shared.so
 
-$ readelf -lW /tmp/warserpent-elf-wjk6cabz/lib/armeabi-v7a/libc++_shared.so
+$ readelf -lW /tmp/warserpent-elf-j5q4ls5i/lib/armeabi-v7a/libc++_shared.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0
@@ -373,7 +374,7 @@ exit=0
 
 Official release-template native payload verified SHA256 c8687b05ea01f772647db6ba7bc85439b687c2603df63555796558f5e1f97bb9 lib/armeabi-v7a/libgodot_android.so
 
-$ readelf -lW /tmp/warserpent-elf-wjk6cabz/lib/armeabi-v7a/libgodot_android.so
+$ readelf -lW /tmp/warserpent-elf-j5q4ls5i/lib/armeabi-v7a/libgodot_android.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0

@@ -86,28 +86,13 @@ for k,(bright,mid,dark,accent) in enumerate(palettes):
 fontpath=A/'fonts/Display.ttf'
 def font(size):return ImageFont.truetype(str(fontpath),int(size*S))
 def txt(d,xy,t,size,fill,stroke=0):d.text((int(xy[0]*S),int(xy[1]*S)),t,font=font(size),fill=fill,stroke_width=stroke*S,stroke_fill=(2,8,22,255))
-im,d=canvas(900,235)
-line(d,[(20,30),(96,30),(110,16),(780,16),(803,39),(876,39)],col('#43e4fb'),2)
-# serpent emblem at left
-poly(d,[(24,79),(52,56),(114,56),(140,77),(121,98),(75,98),(65,112),(124,112),(145,133),(118,161),(49,161),(26,142),(46,125),(67,140),(104,140),(112,132),(56,132),(34,111),(48,91),(106,91),(113,80),(70,80),(54,95)],col('#35dff7'),col('#b5ffff'))
-txt(d,(163,42),'WAR SERPENT',78,col('#e8f9ff'),1)
-txt(d,(170,135),'NEON CITY  /  ARENA SURVIVAL',22,col('#8dc2d9'))
-txt(d,(747,143),'.IO',43,col('#cc83ff'))
-line(d,[(166,180),(840,180)],col('#536fa6'),1)
-save(glow(im),Path('branding/warserpent.png'))
+# War Serpent logo is original image-generated key art; retain checked-in PNG.
 im,d=canvas(600,240)
 poly(d,[(38,50),(163,50),(145,72),(61,72),(80,99),(145,99),(126,120),(67,120),(79,147),(146,147),(166,169),(50,169),(24,109)],col('#ae7aff'),col('#f1c5ff'))
 txt(d,(190,56),'EMNIO',68,col('#f1edff'))
 txt(d,(195,143),'PLAY BEYOND THE SIGNAL',16,col('#8f9fbd'))
 save(glow(im),Path('branding/emnio.png'))
-im,d=canvas(512,512)
-rect(d,(0,0,512,512),col('#080d23'),col('#30274c'),7)
-# graphic letter S serpent monogram in a hex shield
-poly(d,[(256,28),(454,140),(454,369),(256,484),(58,369),(58,140)],col('#101d37'),col('#9b63fb'))
-poly(d,[(110,185),(165,115),(328,115),(394,167),(354,223),(219,223),(196,257),(338,257),(395,314),(343,390),(160,390),(108,344),(149,295),(194,336),(309,336),(325,315),(165,315),(111,269),(139,215),(304,215),(324,188),(194,171),(170,201)],col('#24d6ed'),col('#bcfaff'))
-poly(d,[(315,119),(377,142),(405,172),(368,190),(326,180)],col('#2ae8fb'),col('#a7ffff'))
-poly(d,[(357,145),(379,154),(365,165)],col('#d9adff'))
-save(glow(im),Path('branding/icon.png'))
+# Android icon is original image-generated key art; retain checked-in PNG.
 # Material UI assets.
 for name,colour in [('panel','#263451'),('button','#28dded'),('button_alt','#a972f4'),('card','#4a5e83')]:
  im,d=canvas(360,128)
@@ -202,7 +187,7 @@ for char in 'EMNIO':
  x+= (max(pt[0] for pt in shapes[0])+30)*1.35
 # restrained label with generous tracking
 small=ImageFont.truetype(str(A/'fonts/Body.ttf'),17*S)
-d.text((302*S,260*S),'I N D E P E N D E N T   G A M E S',font=small,fill=col('#97a4be'))
+d.text((302*S,260*S),'G A M E S',font=small,fill=col('#97a4be'))
 line(d,[(302,291),(423,291)],col('#9c78d4'),2)
 save(im,Path('branding/emnio.png'))
 im,d=canvas(512,512)
@@ -364,3 +349,82 @@ for k,palette in enumerate(newpalettes,5):
   line(d,[(47,53),(57,46)],a,2)
  save(glow(im),Path(f'icons/ability_{k}.png'))
 print('v1.1 assets: refined EMNIO brand, tactile metal UI, 8 distinct skin sets.')
+
+# v1.2 compact navigation pictograms, neutral platinum/cyan language.
+for name in ('serpent','shop','mission','record','achievement'):
+ im,d=canvas(96,96)
+ ink=col('#cfebf7');ac=col('#67deec');shadow=col('#314961')
+ if name=='serpent':
+  # Continuous coil silhouette with a visible triangular, eyed head.
+  poly(d,[(14,29),(29,14),(61,14),(80,29),(75,44),(36,44),(28,53),(63,53),(79,68),(65,82),(27,82),(13,68),(25,58),(35,68),(57,68),(62,64),(28,64),(14,52),(23,32),(59,32),(62,28),(37,27),(29,36)],ink)
+  poly(d,[(59,12),(80,21),(86,31),(76,35),(61,27)],ac)
+  ell(d,(71,21,74,24),col('#071a2b'))
+ elif name=='shop':
+  poly(d,[(20,35),(76,35),(82,79),(14,79)],None,ink)
+  line(d,[(20,35),(76,35),(82,79),(14,79),(20,35)],ink,4)
+  d.arc((31*S,13*S,65*S,55*S),180,360,fill=ac,width=4*S)
+  ell(d,(40,50,56,66),ac)
+  line(d,[(45,54),(50,54),(45,60),(51,60)],col('#0e2436'),2)
+ elif name=='mission':
+  line(d,[(71,77),(24,77),(24,23),(36,23)],ink,4)
+  line(d,[(58,23),(71,23),(71,77)],ink,4)
+  rect(d,(35,16,59,30),ac)
+  for y in (43,62):
+   line(d,[(32,y),(36,y+4),(43,y-5)],ac,3)
+   line(d,[(50,y),(62,y)],ink,3)
+ elif name=='record':
+  # Flag on the summit of an ascending record chart.
+  line(d,[(16,77),(16,59),(31,59),(31,77),(39,77),(39,43),(54,43),(54,77),(62,77),(62,27),(77,27),(77,77)],ink,3)
+  line(d,[(15,79),(81,79)],ac,3)
+  line(d,[(68,26),(68,9)],ac,3)
+  poly(d,[(69,8),(84,12),(69,19)],ac)
+ else:
+  # A medal framed by a sparse laurel; no dense unreadable detail.
+  poly(d,[(48,15),(58,36),(81,40),(64,56),(68,79),(48,68),(28,79),(32,56),(15,40),(38,36)],ink)
+  poly(d,[(48,27),(54,42),(69,45),(58,54),(59,67),(48,60),(37,67),(38,54),(28,45),(42,42)],ac)
+  for side in(-1,1):
+   line(d,[(48+side*33,75),(48+side*39,59),(48+side*37,43)],shadow,3)
+ save(im,Path(f'icons/{name}.png'))
+# White energy sprite for a single batch tinted by per-instance colors.
+im,d=canvas(64,64)
+for r in range(29,0,-1):ell(d,(32-r,32-r,32+r,32+r),(255,255,255,int(180*(1-r/30)**3)))
+ell(d,(27,27,37,37),(255,255,255,255))
+save(im,Path('particles/energy.png'))
+# New original floor material: tileable inset metal octagonal deck panels,
+# sparse cyan terminals, restrained manufactured bevels; a single GPU texture.
+im,d=canvas(512,512)
+d.rectangle((0,0,512*S,512*S),fill=col('#080f1c'))
+for x in range(-128,512,128):
+ for y in range(-128,512,128):
+  points=[(x+16,y+3),(x+111,y+3),(x+125,y+17),(x+125,y+111),(x+111,y+125),(x+17,y+125),(x+3,y+111),(x+3,y+16)]
+  poly(d,points,col('#101b2a'),col('#1b2a3d'))
+  line(d,[(x+18,y+5),(x+110,y+5),(x+122,y+18)],col('#253447'),1)
+  line(d,[(x+6,y+110),(x+18,y+122),(x+110,y+122)],col('#050b15'),2)
+  poly(d,[(x+26,y+24),(x+102,y+24),(x+104,y+27),(x+24,y+27)],col('#152438'))
+  line(d,[(x+16,y+48),(x+16,y+76)],col('#1e3245'),1)
+  line(d,[(x+111,y+48),(x+111,y+76)],col('#1e3245'),1)
+  # Docking latch and direction markers are intentionally dim, behind food.
+  rect(d,(x+56,y+56,x+72,y+72),col('#0a1422'),col('#20364a'),1)
+  line(d,[(x+60,y+64),(x+68,y+64)],col('#36616c'),2)
+  for sx,sy in [(20,20),(108,108)]:ell(d,(x+sx-1,y+sy-1,x+sx+1,y+sy+1),col('#36515f'))
+  if (x//128+y//128)%3==0:
+   line(d,[(x+45,y+109),(x+75,y+109)],col('#23515d'),2)
+save(im,Path('arenas/neon_city.png'))
+print('v1.2 authored navigation icons, neutral energy sprite, inset metal arena tile generated.')
+
+# Final v1.2 reference-aligned original materials and glossy species.
+# Generated EMNIO GAMES and War Serpent brand PNGs are never edited by these tools.
+import runpy
+runpy.run_path(str(ROOT/'tools'/'generate_snake_sprites.py'), run_name='__main__')
+runpy.run_path(str(ROOT/'tools'/'generate_lobby_materials.py'), run_name='__main__')
+# Authored compatibility wordmark also spells out the full studio name.
+im,d=canvas(1000,270)
+x=105
+for char in 'EMNIO':
+ shapes=letters[char]
+ poly(d,[(x+u*1.65,20+v*1.65) for u,v in shapes[0]],col('#f2f7ff'))
+ if char=='O':poly(d,[(x+u*1.65,20+v*1.65) for u,v in shapes[1]],(0,0,0,0))
+ x+=(max(pt[0] for pt in shapes[0])+29)*1.65
+studiofont=ImageFont.truetype(str(A/'fonts/Display.ttf'),31*S)
+d.text((314*S,201*S),'G A M E S',font=studiofont,fill=col('#a8c1d6'))
+save(im,Path('branding/emnio_wordmark.png'))

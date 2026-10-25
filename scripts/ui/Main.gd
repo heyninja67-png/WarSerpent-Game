@@ -2,6 +2,8 @@ extends Control
 
 const ProfileScript = preload("res://scripts/core/Profile.gd")
 const PreviewScript = preload("res://scripts/ui/SerpentPreview.gd")
+const PlatformScript = preload("res://scripts/ui/LobbyPlatform.gd")
+const AtmosphereScript = preload("res://scripts/ui/MenuAtmosphere.gd")
 const ArenaScript = preload("res://scripts/gameplay/ArenaGame.gd")
 const CYAN := Color("55f5f0")
 const INK := Color("091423")
@@ -38,6 +40,9 @@ var menu_clock := 0.0
 var menu_logo: TextureRect
 var audio_cache: Dictionary = {}
 var backdrop_shift := Vector2.ZERO
+var page_animation_direction := 0
+var atmosphere: Control
+var selected_title: Label
 
 func _ready() -> void:
 	profile.load_profile()
@@ -70,6 +75,8 @@ func box(color: Color, edge: Color = Color("25445a"), radius: int = 16) -> Style
 	style.bg_color = color
 	style.border_color = edge
 	style.set_border_width_all(1)
+	style.shadow_color=Color(0,0,0,.15)
+	style.shadow_size=3
 	style.set_corner_radius_all(radius)
 	style.content_margin_left = 18
 	style.content_margin_right = 18
@@ -103,35 +110,63 @@ func button_art(asset_name: String) -> StyleBoxTexture:
 		artwork.set_texture_margin(side,16)
 	return artwork
 
+func game_button_style(asset: String, primary: bool) -> StyleBox:
+	var path:="res://assets/ui/%s.png"%asset
+	if ResourceLoader.exists(path):
+		return button_art(asset)
+	return box(Color("ffd259") if primary else Color(.035,.055,.08,.8),Color("ffda76") if primary else Color("3b5163"),2)
+
+func animate_button(b: Button, target: Vector2) -> void:
+	var old: Tween=b.get_meta("feedback_tween") if b.has_meta("feedback_tween") else null
+	if old != null and old.is_valid():
+		old.kill()
+	var feedback := b.create_tween()
+	b.set_meta("feedback_tween",feedback)
+	feedback.tween_property(b,"scale",target,.13).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
 func button(parent: Node, caption: String, rect: Rect2, action: Callable, primary: bool = false) -> Button:
 	var b := Button.new()
-	b.text = caption
-	b.add_theme_stylebox_override("normal", button_art("button" if primary else "button_alt"))
-	b.add_theme_stylebox_override("hover", button_art("button_hover"))
-	b.add_theme_stylebox_override("pressed", button_art("button_pressed"))
-	b.add_theme_stylebox_override("focus", box(Color(0,0,0,0), CYAN, 14))
-	b.add_theme_color_override("font_color", WHITE)
-	b.add_theme_font_size_override("font_size", 23 if primary else 17)
+	b.text=caption
+	b.add_theme_stylebox_override("normal",game_button_style("button_start" if primary else "button_alt",primary))
+	b.add_theme_stylebox_override("hover",game_button_style("button_start_hover" if primary else "button_hover",primary))
+	b.add_theme_stylebox_override("pressed",game_button_style("button_start_pressed" if primary else "button_pressed",primary))
+	b.add_theme_stylebox_override("focus",box(Color(0,0,0,0),Color("ffce53"),2))
+	b.add_theme_color_override("font_color",Color("231700") if primary else WHITE)
+	b.add_theme_color_override("font_hover_color",Color("231700") if primary else WHITE)
+	b.add_theme_color_override("font_pressed_color",Color("231700") if primary else WHITE)
+	b.add_theme_font_size_override("font_size",25 if primary else 16)
 	place(b,parent,rect)
-	b.pivot_offset = rect.size * 0.5
-	b.mouse_entered.connect(func():
-		play_sound("hover")
-		b.create_tween().tween_property(b,"scale",Vector2.ONE*1.025,0.14).set_trans(Tween.TRANS_QUAD))
-	b.mouse_exited.connect(func(): b.create_tween().tween_property(b,"scale",Vector2.ONE,0.16))
-	b.button_down.connect(func(): b.create_tween().tween_property(b,"scale",Vector2.ONE*0.965,0.08))
-	b.button_up.connect(func(): b.create_tween().tween_property(b,"scale",Vector2.ONE,0.13))
-	b.pressed.connect(func(): play_sound("tap"); action.call())
+	b.pivot_offset=rect.size*.5
+	b.mouse_entered.connect(func():play_sound("hover");animate_button(b,Vector2.ONE*1.015))
+	b.mouse_exited.connect(func():animate_button(b,Vector2.ONE))
+	b.button_down.connect(func():animate_button(b,Vector2.ONE*.97))
+	b.button_up.connect(func():animate_button(b,Vector2.ONE))
+	b.pressed.connect(func():play_sound("tap");action.call())
 	return b
 
 func panel(parent: Node, rect: Rect2) -> Panel:
 	var p := Panel.new()
-	var artwork := StyleBoxTexture.new()
-	artwork.texture = load("res://assets/ui/panel.png")
-	for side in [SIDE_LEFT,SIDE_TOP,SIDE_RIGHT,SIDE_BOTTOM]:
-		artwork.set_texture_margin(side,16)
-	p.add_theme_stylebox_override("panel", artwork)
-	place(p, parent, rect)
+	p.add_theme_stylebox_override("panel",button_art("lobby_panel") if ResourceLoader.exists("res://assets/ui/lobby_panel.png") else button_art("panel"))
+	place(p,parent,rect)
 	return p
+
+func line_accent(parent: Node, rect: Rect2, color: Color = CYAN) -> ColorRect:
+	var line := ColorRect.new()
+	line.color=color
+	line.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	place(line,parent,rect)
+	return line
+
+func content_rect() -> Rect2:
+	var viewport_size := get_viewport_rect().size
+	var safe := Rect2(Vector2.ZERO,viewport_size)
+	if OS.has_feature("mobile"):
+		var physical := Vector2(DisplayServer.window_get_size())
+		var device_safe := DisplayServer.get_display_safe_area()
+		if physical.x>0 and physical.y>0 and device_safe.size.x>0 and device_safe.size.y>0:
+			var ratio := viewport_size/physical
+			safe=Rect2(Vector2(device_safe.position)*ratio,Vector2(device_safe.size)*ratio).intersection(safe)
+	return safe
 
 func picture(parent: Node, path: String, rect: Rect2) -> TextureRect:
 	var pic := TextureRect.new()
@@ -148,17 +183,20 @@ func clear_screen() -> void:
 		screen.queue_free()
 	screen = Control.new()
 	add_child(screen)
-	screen.size = Vector2(1280,720)
-	screen.position = (get_viewport_rect().size - screen.size) * 0.5
+	screen.size=Vector2(1280,720)
+	var safe := content_rect()
+	var factor := minf(1.0,minf(safe.size.x/1280.0,safe.size.y/720.0))
+	screen.scale=Vector2.ONE*factor
+	screen.position=safe.position+(safe.size-screen.size*factor)*.5
 	backdrop_shift = screen.position
 	overlay = null
 	toast_label = null
-	background = picture(screen, "res://assets/backgrounds/menu.png", Rect2(-screen.position,get_viewport_rect().size))
+	background = picture(screen, "res://assets/backgrounds/menu.png", Rect2(-screen.position/screen.scale,get_viewport_rect().size/screen.scale))
 	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	var shade := ColorRect.new()
-	shade.color = Color(0.015,0.025,0.06,0.62)
+	shade.color = Color(0.012,0.024,0.05,0.73)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	place(shade, screen, Rect2(-screen.position,get_viewport_rect().size))
+	place(shade, screen, Rect2(-screen.position/screen.scale,get_viewport_rect().size/screen.scale))
 	screen.modulate.a = 0.0
 	screen.create_tween().tween_property(screen,"modulate:a",1.0,0.22)
 
@@ -168,9 +206,11 @@ func show_boot() -> void:
 	background.visible = false
 	boot_elapsed = 0.0
 	boot_done = 0
-	boot_logo = picture(screen,"res://assets/branding/emnio_symbol.png",Rect2(535,190,210,210))
+	var studio_path:="res://assets/branding/emnio_games.png" if ResourceLoader.exists("res://assets/branding/emnio_games.png") else "res://assets/branding/emnio_symbol.png"
+	boot_logo=picture(screen,studio_path,Rect2(390,195,500,255))
 	boot_wordmark = picture(screen,"res://assets/branding/emnio_wordmark.png",Rect2(470,424,340,65))
 	boot_wordmark.modulate.a=0.0
+	boot_wordmark.visible=studio_path.ends_with("emnio_symbol.png")
 	var letters := boot_wordmark.create_tween()
 	letters.tween_interval(0.35)
 	letters.tween_property(boot_wordmark,"modulate:a",1.0,0.4)
@@ -205,11 +245,11 @@ func show_boot() -> void:
 func _process(delta: float) -> void:
 	menu_clock += delta
 	if current_page == "menu" and is_instance_valid(menu_logo) and not is_instance_valid(overlay):
-		menu_logo.position.y = 124.0 + sin(menu_clock*1.2)*4.0
+		menu_logo.position.y = 82.0 + sin(menu_clock*.9)*2.0
 	if not boot_active:
 		return
 	boot_elapsed += delta
-	if boot_elapsed > 1.15 and boot_logo.texture.resource_path.ends_with("emnio_symbol.png"):
+	if boot_elapsed > 1.15 and not boot_logo.texture.resource_path.ends_with("warserpent.png"):
 		boot_wordmark.visible=false
 		boot_logo.texture = load("res://assets/branding/warserpent.png")
 		boot_logo.position = Vector2(350,225)
@@ -232,49 +272,105 @@ func _process(delta: float) -> void:
 		show_menu()
 
 func show_menu() -> void:
-	current_page = "menu"
+	current_page="menu"
 	clear_screen()
 	set_music_track("menu")
-	button(screen,"%s  /  LV. %d" % [profile.data.name,profile.data.level],Rect2(42,28,290,52),show_profile)
-	label_at(screen,"%d XP" % profile.data.xp,Rect2(354,38,170,32),16,MUTED)
-	picture(screen,"res://assets/icons/coin.png",Rect2(765,40,28,28))
-	label_at(screen,str(profile.data.coins),Rect2(805,35,120,38),23,Color("ffcf71"))
-	picture(screen,"res://assets/icons/gem.png",Rect2(940,40,28,28))
-	label_at(screen,str(profile.data.gems),Rect2(979,35,100,38),23,CYAN)
-	button(screen,"SETTINGS",Rect2(1090,28,150,52),show_settings)
-	label_at(screen,"EMNIO  /  NEON CITY",Rect2(54,105,420,25),13,CYAN)
-	menu_logo = picture(screen,"res://assets/branding/warserpent.png",Rect2(36,124,668,170))
-	var active: Dictionary = profile.catalog[int(profile.data.equipped)]
-	preview = PreviewScript.new()
-	preview.skin_id = int(profile.data.equipped)
-	place(preview,screen,Rect2(30,280,720,280))
-	var identity := title(screen,str(active.name).to_upper(),Rect2(56,551,650,42),28)
-	identity.modulate = Color(active.color)
-	label_at(screen,str(active.ability)+"  /  "+str(active.rarity).to_upper(),Rect2(58,600,650,26),14,MUTED)
-	var play_panel := panel(screen,Rect2(814,142,426,470))
-	label_at(play_panel,"CHOOSE YOUR ARENA",Rect2(28,24,370,25),13,CYAN)
-	button(play_panel,"OFFLINE" if not online_mode else "ONLINE",Rect2(27,65,372,52),func(): online_mode=not online_mode; show_menu())
-	title(play_panel,"NEON CITY",Rect2(28,139,370,54),34)
-	label_at(play_panel,"Real players • Direct connection" if online_mode else "Solo arena • Smart rivals",Rect2(30,193,365,30),17,MUTED)
+	atmosphere=AtmosphereScript.new()
+	atmosphere.name="Atmosphere"
+	place(atmosphere,screen,Rect2(-screen.position/screen.scale,get_viewport_rect().size/screen.scale))
+	# Compact original studio lobby header: identity, real balances, settings.
+	var header:=ColorRect.new()
+	header.color=Color(.02,.035,.055,.89)
+	header.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	place(header,screen,Rect2(-screen.position.x/screen.scale.x,0,get_viewport_rect().size.x/screen.scale.x,73))
+	button(screen,"%s  /  LV. %d"%[profile.data.name,profile.data.level],Rect2(28,14,278,46),show_profile)
+	label_at(screen,"%d XP"%profile.data.xp,Rect2(322,21,120,28),14,MUTED)
+	picture(screen,"res://assets/icons/coin.png",Rect2(468,24,26,26))
+	label_at(screen,str(profile.data.coins),Rect2(507,16,135,38),22,Color("ffcf71"))
+	picture(screen,"res://assets/icons/gem.png",Rect2(660,24,26,26))
+	label_at(screen,str(profile.data.gems),Rect2(699,16,100,38),22,CYAN)
+	label_at(screen,"EMNIO GAMES",Rect2(857,23,220,26),14,Color("c5d2df"))
+	button(screen,"SETTINGS",Rect2(1094,14,154,46),show_settings)
+	line_accent(screen,Rect2(0,72,1280,1),Color(.6,.7,.8,.24))
+	# Real profile record, not an invented event or season.
+	var record:=panel(screen,Rect2(27,103,204,97))
+	label_at(record,"PERSONAL BEST",Rect2(15,11,180,24),11,Color("ffd259"))
+	title(record,str(profile.data.best_score),Rect2(15,39,180,43),31)
+	menu_logo=picture(screen,"res://assets/branding/warserpent.png",Rect2(270,82,360,150))
+	var entries:=["SHOP","MISSIONS","REWARDS","RECORDS","ACHIEVEMENTS"]
+	var icons:=["shop","mission","chest","record","achievement"]
+	var actions:Array[Callable]=[func():show_collection(true),show_missions,show_rewards,show_ranking,show_achievements]
+	var navigation_back:=picture(screen,"res://assets/ui/nav_strip.png",Rect2(15,212,228,335))
+	navigation_back.stretch_mode=TextureRect.STRETCH_SCALE
+	for i in range(entries.size()):
+		var nav:=button(screen,entries[i],Rect2(27,231+i*59,204,45),actions[i])
+		nav.add_theme_stylebox_override("normal",box(Color(.02,.03,.05,.22),Color(.3,.4,.5,.06),0))
+		nav.alignment=HORIZONTAL_ALIGNMENT_LEFT
+		nav.add_theme_font_size_override("font_size",14)
+		var icon_path:="res://assets/icons/%s.png"%icons[i]
+		if ResourceLoader.exists(icon_path):
+			nav.icon=load(icon_path)
+			nav.expand_icon=true
+			nav.add_theme_constant_override("icon_max_width",23)
+			nav.add_theme_constant_override("h_separation",13)
+	# Animated upright serpent as the lobby character, on its own energy podium.
+	var active:Dictionary=profile.catalog[int(profile.data.equipped)]
+	var podium:=PlatformScript.new()
+	podium.accent=Color(active.color)
+	place(podium,screen,Rect2(289,494,610,146))
+	preview=PreviewScript.new()
+	preview.name="LobbyHero"
+	preview.skin_id=int(profile.data.equipped)
+	preview.hero_pose=true
+	place(preview,screen,Rect2(252,138,660,440))
+	selected_title=title(screen,str(active.name).to_upper(),Rect2(292,589,600,39),27)
+	selected_title.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	label_at(screen,str(active.ability)+"   /   "+str(active.rarity).to_upper(),Rect2(344,630,505,22),12,Color(active.color)).horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	# Collection rail uses actual inventory. Every slot equips or opens its real page.
+	label_at(screen,"COLLECTION",Rect2(1084,105,160,25),12,Color("ffd259"))
+	for i in range(profile.catalog.size()):
+		var skin:Dictionary=profile.catalog[i]
+		var id:=int(skin.id)
+		var owned:bool=profile.data.owned.has(id)
+		var cell:=button(screen,"",Rect2(1113+(i%2)*67,145+(i/2)*66,57,57),func():
+			if owned:
+				profile.equip_skin(id)
+				show_menu()
+			else:
+				collection_page=id/4
+				show_collection(true))
+		cell.tooltip_text=str(skin.name)
+		picture(cell,"res://assets/snakes/head_%d.png"%id,Rect2(4,4,49,49))
+		cell.modulate=Color.WHITE if owned else Color(.55,.62,.69,.8)
+		if id==int(profile.data.equipped):
+			cell.add_theme_stylebox_override("normal",box(Color("183744"),Color("ffce53"),2))
+	var mode:=panel(screen,Rect2(942,446,304,143))
+	button(mode,"OFFLINE" if not online_mode else "ONLINE",Rect2(13,11,278,35),func():online_mode=not online_mode;show_menu())
+	title(mode,"NEON CITY",Rect2(15,56,277,35),23)
 	if not online_mode:
-		var modes := OptionButton.new()
+		var modes:=OptionButton.new()
 		for item in ["Rookie","Competitive","Veteran"]:
 			modes.add_item(item)
-		place(modes,play_panel,Rect2(28,248,370,46))
+		place(modes,mode,Rect2(13,99,278,32))
 		modes.select(int(profile.data.settings.difficulty))
-		modes.item_selected.connect(func(index): profile.set_setting("difficulty",index))
+		modes.item_selected.connect(func(index):profile.set_setting("difficulty",index))
 	else:
-		label_at(play_panel,"Host a room or join an address.",Rect2(30,250,365,40),16,MUTED)
-	var play := button(play_panel,"PLAY ONLINE  ›" if online_mode else "PLAY  ›",Rect2(28,328,370,78),show_online if online_mode else start_game,true)
-	play.add_theme_font_override("font",font_display)
-	var pulse := play.create_tween().set_loops()
-	pulse.tween_property(play,"modulate",Color("a9ffef"),1.1)
-	pulse.tween_property(play,"modulate",Color.WHITE,1.1)
-	label_at(play_panel,"BEST  %d" % profile.data.best_score,Rect2(30,425,365,24),14,MUTED)
-	var names := ["SERPENTS","SHOP","MISSIONS","REWARDS","RECORDS","ACHIEVEMENTS"]
-	var actions: Array[Callable] = [func(): show_collection(false),func(): show_collection(true),show_missions,show_rewards,show_ranking,show_achievements]
-	for i in range(6):
-		button(screen,names[i],Rect2(42+i*202,659,186,43),actions[i])
+		label_at(mode,"DIRECT MULTIPLAYER",Rect2(15,103,277,24),11,MUTED)
+	var start:=button(screen,"START ONLINE" if online_mode else "START",Rect2(942,608,304,78),show_online if online_mode else start_game,true)
+	start.name="PrimaryPlay"
+	start.add_theme_font_override("font",font_display)
+	start.add_theme_font_size_override("font_size",31 if not online_mode else 23)
+	var pulse:=start.create_tween().set_loops()
+	pulse.tween_property(start,"modulate",Color("fff0b1"),1.4)
+	pulse.tween_property(start,"modulate",Color.WHITE,1.4)
+	# Cosmetic toolbar, every tab backed by a functioning collection/equip action.
+	line_accent(screen,Rect2(27,658,870,1),Color(.7,.6,.3,.3))
+	var serpents:=button(screen,"SERPENTS",Rect2(27,660,205,43),func():show_collection(false))
+	serpents.icon=load("res://assets/icons/serpent.png")
+	serpents.expand_icon=true
+	serpents.add_theme_constant_override("icon_max_width",21)
+	button(screen,"CHANGE SERPENT",Rect2(249,660,257,43),func():show_collection(false))
+	label_at(screen,"%d / %d UNLOCKED"%[profile.data.owned.size(),profile.catalog.size()],Rect2(538,674,340,26),13,Color("d2bc7d"))
 
 func open_page(caption: String, subtitle: String = "") -> Control:
 	if is_instance_valid(overlay):
@@ -283,55 +379,76 @@ func open_page(caption: String, subtitle: String = "") -> Control:
 	place(overlay,screen,Rect2(0,0,1280,720))
 	var dim := ColorRect.new()
 	dim.color = Color(0.01,0.02,0.05,0.95)
-	place(dim,overlay,Rect2(-screen.position,get_viewport_rect().size))
-	title(overlay,caption,Rect2(42,30,1000,55),35)
+	place(dim,overlay,Rect2(-screen.position/screen.scale,get_viewport_rect().size/screen.scale))
+	line_accent(overlay,Rect2(42,24,42,3),Color("ffd259"))
+	title(overlay,caption,Rect2(42,32,1000,55),35)
 	label_at(overlay,subtitle,Rect2(44,90,1100,36),16,MUTED)
 	button(overlay,"BACK",Rect2(1080,32,155,48),show_menu)
 	return overlay
 
+func change_collection_page(direction: int, maximum: int, shop: bool) -> void:
+	collection_page=clampi(collection_page+direction,0,maximum-1)
+	page_animation_direction=direction
+	show_collection(shop)
+
 func show_collection(shop: bool = false) -> void:
-	current_page = "shop" if shop else "collection"
-	var page := open_page("NEON MARKET" if shop else "SERPENT COLLECTION", "%d coins • Eight original serpents • Eight powers" % profile.data.coins)
-	var filters := OptionButton.new()
-	for text_value in ["All", "Owned", "Locked"]:
+	current_page="shop" if shop else "collection"
+	var page:=open_page("NEON MARKET" if shop else "SERPENT COLLECTION","Eight original serpents. Choose your own signature.")
+	picture(page,"res://assets/icons/coin.png",Rect2(815,41,24,24))
+	label_at(page,str(profile.data.coins),Rect2(851,35,180,38),23,Color("ffcf71"))
+	var filters:=OptionButton.new()
+	for text_value in ["All","Owned","Locked"]:
 		filters.add_item(text_value)
 	place(filters,page,Rect2(42,137,240,40))
 	filters.select(filter_index)
-	filters.item_selected.connect(func(value): filter_index=value; collection_page=0; show_collection(shop))
-	var x := 42
-	var visible_entries: Array = []
+	filters.item_selected.connect(func(value):filter_index=value;collection_page=0;show_collection(shop))
+	var visible_entries:Array=[]
 	for entry in profile.catalog:
-		var owned: bool = profile.data.owned.has(int(entry.id))
-		if (filter_index == 1 and not owned) or (filter_index == 2 and owned):
+		var owned:bool=profile.data.owned.has(int(entry.id))
+		if (filter_index==1 and not owned) or (filter_index==2 and owned):
 			continue
 		visible_entries.append(entry)
-	var page_count := maxi(1,ceili(visible_entries.size()/4.0))
-	collection_page = clampi(collection_page,0,page_count-1)
-	button(page,"‹",Rect2(1000,137,68,40),func(): collection_page=maxi(0,collection_page-1); show_collection(shop))
-	label_at(page,"%d / %d" % [collection_page+1,page_count],Rect2(1082,143,80,35),18,CYAN)
-	button(page,"›",Rect2(1164,137,68,40),func(): collection_page=mini(page_count-1,collection_page+1); show_collection(shop))
+	var page_count:=maxi(1,ceili(visible_entries.size()/4.0))
+	collection_page=clampi(collection_page,0,page_count-1)
+	button(page,"‹",Rect2(1000,137,68,40),func():change_collection_page(-1,page_count,shop))
+	label_at(page,"%d / %d"%[collection_page+1,page_count],Rect2(1082,143,80,35),18,CYAN)
+	button(page,"›",Rect2(1164,137,68,40),func():change_collection_page(1,page_count,shop))
+	var cards:=Control.new()
+	cards.name="CollectionCards"
+	place(cards,page,Rect2(42,194,1190,452))
+	if page_animation_direction!=0:
+		cards.position.x+=float(page_animation_direction)*18.0
+		cards.modulate.a=0.0
+		var arrival:=cards.create_tween().set_parallel()
+		arrival.tween_property(cards,"position:x",42.0,.21).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		arrival.tween_property(cards,"modulate:a",1.0,.21)
+	page_animation_direction=0
+	var x:=0
 	for entry in visible_entries.slice(collection_page*4,collection_page*4+4):
-		var id := int(entry.id)
-		var owned: bool = profile.data.owned.has(id)
-		if (filter_index == 1 and not owned) or (filter_index == 2 and owned):
-			continue
-		var card := panel(page,Rect2(x,195,282,448))
-		label_at(card,str(entry.rarity).to_upper(),Rect2(16,16,208,25),13,Color(entry.color))
-		title(card,str(entry.name).replace(" ","\n"),Rect2(16,50,212,68),24)
-		var serpent := PreviewScript.new()
+		var id:=int(entry.id)
+		var owned:bool=profile.data.owned.has(id)
+		var tint:=Color(entry.color)
+		var card:=panel(cards,Rect2(x,0,282,452))
+		line_accent(card,Rect2(19,18,24,3),tint)
+		label_at(card,str(entry.rarity).to_upper(),Rect2(54,8,210,24),11,tint)
+		title(card,str(entry.name).replace(" ","\n"),Rect2(19,43,246,68),25)
+		var serpent:=PreviewScript.new()
 		serpent.skin_id=id
-		place(serpent,card,Rect2(5,115,272,125))
-		label_at(card,str(entry.ability),Rect2(16,250,205,45),17,CYAN).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label_at(card,str(entry.description),Rect2(16,302,250,70),14,MUTED).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		var caption := "EQUIPPED" if int(profile.data.equipped)==id else ("EQUIP" if owned else "%d COINS" % entry.price)
-		button(card,caption,Rect2(14,390,254,43),func():
+		place(serpent,card,Rect2(3,117,276,124))
+		picture(card,"res://assets/icons/ability_%d.png"%id,Rect2(18,252,31,31))
+		label_at(card,str(entry.ability),Rect2(60,250,205,40),16,CYAN).autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+		var timing:=label_at(card,"ACTIVE %.1fs  /  READY %ds"%[float(entry.duration),int(entry.cooldown)],Rect2(19,294,249,28),11,MUTED)
+		timing.name="PowerTiming"
+		label_at(card,str(entry.description),Rect2(19,328,248,49),12,MUTED).autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+		var caption:="EQUIPPED" if int(profile.data.equipped)==id else ("EQUIP" if owned else "%d COINS"%entry.price)
+		button(card,caption,Rect2(17,395,248,41),func():
 			if owned:
 				profile.equip_skin(id)
 				show_collection(shop)
 			else:
-				confirm_purchase(id,shop), int(profile.data.equipped)==id)
-		x += 302
-	label_at(page,"Earn coins in the arena. Every unlock stays in your collection.",Rect2(42,669,1150,28),15,MUTED)
+				confirm_purchase(id,shop),int(profile.data.equipped)==id)
+		x+=302
+	label_at(page,"Unlocked serpents stay in your collection. No real-money purchases.",Rect2(42,669,1150,28),13,MUTED)
 
 func confirm_purchase(id: int, shop: bool) -> void:
 	var entry: Dictionary = profile.catalog[id]
@@ -355,7 +472,7 @@ func confirm_purchase(id: int, shop: bool) -> void:
 	dialog.popup_centered(Vector2i(550,220))
 
 func show_profile() -> void:
-	var page := open_page("PILOT IDENTITY","Your local profile • Emnio")
+	var page := open_page("PILOT IDENTITY","Your local profile • Emnio Games")
 	panel(page,Rect2(90,175,1100,425))
 	label_at(page,"ARENA NAME",Rect2(125,207,500,35),17,CYAN)
 	var name_edit := LineEdit.new()
@@ -395,9 +512,9 @@ func show_settings() -> void:
 	button(page,"CREDITS & LICENSES",Rect2(395,628,490,48),show_credits)
 
 func show_credits() -> void:
-	var page := open_page("EMNIO / CREDITS","War Serpent.io 1.1.0 • MIT code • Original CC0 art • DejaVu fonts")
+	var page := open_page("EMNIO GAMES / CREDITS","War Serpent.io 1.2.0 • Emnio Games • MIT code • Original CC0 art • DejaVu fonts")
 	var credits := RichTextLabel.new()
-	credits.text = "DEVELOPED FOR EMNIO\nOriginal artwork, authored sprites and synthesized music. Background created with OpenAI image generation.\n\nGODOT ENGINE 4.6.3\nCopyright (c) 2014-present Godot Engine contributors.\nCopyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.\nhttps://godotengine.org/license/\n\n" + Engine.get_license_text() + "\n\nDejaVu fonts: copyright Bitstream, Inc. and DejaVu contributors. Full license below."
+	credits.text = "DEVELOPED FOR EMNIO GAMES\nOriginal artwork, authored sprites and synthesized music. Background created with OpenAI image generation.\n\nGODOT ENGINE 4.6.3\nCopyright (c) 2014-present Godot Engine contributors.\nCopyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.\nhttps://godotengine.org/license/\n\n" + Engine.get_license_text() + "\n\nDejaVu fonts: copyright Bitstream, Inc. and DejaVu contributors. Full license below."
 	credits.scroll_active = true
 	credits.text += "\n\n" + FileAccess.get_file_as_string("res://assets/fonts/LICENSE-DejaVu.txt")
 	place(credits,page,Rect2(75,155,1130,490))
@@ -495,18 +612,32 @@ func on_finished(result: Dictionary) -> void:
 	show_results()
 
 func show_results() -> void:
-	current_page = "results"
+	current_page="results"
 	clear_screen()
-	title(screen,"ELIMINATED",Rect2(380,50,700,80),48)
-	label_at(screen,"Your next run starts stronger.",Rect2(390,135,720,40),20,MUTED)
-	panel(screen,Rect2(225,205,830,340))
-	title(screen,str(last_result.get("score",0)),Rect2(265,235,480,85),65)
-	label_at(screen,"FINAL SCORE   /   BEST %d" % profile.data.best_score,Rect2(270,328,700,35),19,CYAN)
-	label_at(screen,"SURVIVED  %.1fs       ELIMINATIONS  %d       ENERGY  %d" % [last_result.get("survived",0),last_result.get("kills",0),last_result.get("energy",0)],Rect2(270,392,740,40),18)
-	label_at(screen,"EARNED     +%d COINS    +%d XP" % [reward.get("coins",0),reward.get("xp",0)],Rect2(270,461,720,40),23,Color("ffd36b"))
-	button(screen,"PLAY AGAIN",Rect2(225,585,355,66),start_game,true)
-	button(screen,"CHANGE SERPENT",Rect2(600,585,250,66),func(): show_menu(); show_collection(false))
-	button(screen,"MENU",Rect2(870,585,185,66),show_menu)
+	label_at(screen,"RUN COMPLETE",Rect2(100,46,470,25),12,CYAN)
+	title(screen,"ELIMINATED",Rect2(96,81,1060,68),45)
+	var score_panel:=panel(screen,Rect2(98,182,414,348))
+	label_at(score_panel,"FINAL SCORE",Rect2(28,26,360,28),14,CYAN)
+	title(score_panel,str(last_result.get("score",0)),Rect2(23,82,368,108),80)
+	line_accent(score_panel,Rect2(28,224,356,1),Color("294052"))
+	label_at(score_panel,"PERSONAL BEST",Rect2(28,254,250,28),12,MUTED)
+	title(score_panel,str(profile.data.best_score),Rect2(28,290,350,38),25)
+	var stats:=panel(screen,Rect2(538,182,644,160))
+	var stat_names:=["SURVIVED","ELIMINATIONS","ENERGY"]
+	var values:=["%.1fs"%last_result.get("survived",0),str(last_result.get("kills",0)),str(last_result.get("energy",0))]
+	for i in range(3):
+		label_at(stats,stat_names[i],Rect2(27+i*208,26,192,27),11,MUTED)
+		title(stats,values[i],Rect2(27+i*208,73,192,52),34)
+	var earned:=panel(screen,Rect2(538,363,644,167))
+	label_at(earned,"REWARDS EARNED",Rect2(27,23,590,26),12,CYAN)
+	picture(earned,"res://assets/icons/coin.png",Rect2(27,81,35,35))
+	title(earned,"+%d"%reward.get("coins",0),Rect2(81,72,214,52),32)
+	line_accent(earned,Rect2(320,73,1,53),Color("294052"))
+	label_at(earned,"XP",Rect2(353,84,50,32),18,CYAN)
+	title(earned,"+%d"%reward.get("xp",0),Rect2(416,72,192,52),32)
+	button(screen,"PLAY AGAIN",Rect2(98,579,414,68),start_game,true)
+	button(screen,"CHANGE SERPENT",Rect2(538,579,358,68),func():show_menu();show_collection(false))
+	button(screen,"MENU",Rect2(920,579,262,68),show_menu)
 
 func toast(message: String) -> void:
 	if is_instance_valid(toast_label):

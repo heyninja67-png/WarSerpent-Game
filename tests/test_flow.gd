@@ -84,6 +84,66 @@ func touch(index: int, at: Vector2, down: bool) -> void:
 	event.pressed = down
 	Input.parse_input_event(event)
 
+func mouse_button(at: Vector2, down: bool) -> void:
+	var event := InputEventMouseButton.new()
+	event.position = root.get_final_transform() * at
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.button_mask = MOUSE_BUTTON_MASK_LEFT if down else 0
+	event.pressed = down
+	Input.parse_input_event(event)
+
+func check_power_timings() -> void:
+	var timings: Array = []
+	for label in descendants(app.overlay,"Label"):
+		if label.name == "PowerTiming":
+			timings.append(label)
+	check(timings.size() == 4,"collection page exposes four readable power timing labels")
+	for label in timings:
+		var card_previews := previews(label.get_parent())
+		if card_previews.is_empty():
+			check(false,"power timing belongs to a skin card")
+			continue
+		var entry: Dictionary = app.profile.catalog[card_previews[0].skin_id]
+		check(label.text.contains("%.1fs" % entry.duration) and label.text.contains("%ds" % entry.cooldown),"%s card reports real duration and cooldown" % entry.name)
+
+func check_minimap(arena: Node2D, state: Dictionary) -> void:
+	var center: Vector2 = state.center
+	var radius: float = state.radius
+	check(radius > 30.0 and center.x-radius >= 0.0 and center.y-radius >= 0.0 and center.x < 220.0 and center.y < 200.0,"circular minimap fits the upper left of the arena")
+	var player_position: Vector2 = state.player
+	check(player_position.is_finite() and player_position.distance_to(center) <= radius,"minimap exposes a finite player position inside its circle")
+	var valid_markers := true
+	var correct_directions := true
+	var player_markers := 0
+	for marker in state.markers:
+		var marker_position: Vector2 = marker.position
+		if not marker_position.is_finite() or marker_position.distance_to(center) > radius+0.01:
+			valid_markers = false
+		var world_snake: RefCounted = null
+		for candidate in arena.snakes:
+			if int(candidate.id) == int(marker.id):
+				world_snake = candidate
+				break
+		if world_snake == null:
+			valid_markers = false
+			continue
+		if bool(marker.player):
+			player_markers += 1
+			if int(marker.id) != int(arena.player.id) or marker_position.distance_to(player_position) > 0.01:
+				valid_markers = false
+		var direction: Vector2 = marker_position-center
+		if world_snake.position.length() > 50.0 and direction.length() > 1.0:
+			if direction.normalized().dot(world_snake.position.normalized()) < 0.98:
+				correct_directions = false
+	check(player_markers == 1 and state.markers.size() == arena.snakes.size(),"minimap identifies the actual player and all initial opponents")
+	check(valid_markers,"minimap markers use actual snake IDs and stay inside the circle")
+	check(correct_directions,"minimap marker directions agree with opponents' real world positions")
+	var transforms_valid: bool = arena.minimap_world_to_screen(Vector2.ZERO).is_equal_approx(center)
+	for corner in [Vector2(-arena.BOUNDS,-arena.BOUNDS),Vector2(arena.BOUNDS,-arena.BOUNDS),Vector2(arena.BOUNDS,arena.BOUNDS),Vector2(-arena.BOUNDS,arena.BOUNDS)]:
+		var mapped: Vector2 = arena.minimap_world_to_screen(corner)
+		transforms_valid = transforms_valid and mapped.is_finite() and mapped.distance_to(center) <= radius
+	check(transforms_valid,"actual minimap transform centers the world and keeps all arena corners visible")
+
 func run() -> void:
 	if not OS.get_user_data_dir().begins_with("/tmp/warserpent-flow"):
 		push_error("Protect developer saves: set XDG_DATA_HOME=/tmp/warserpent-flow[-suffix]")
@@ -98,7 +158,8 @@ func run() -> void:
 	await process_frame
 	check(app.current_page == "boot", "startup begins with custom Emnio splash")
 	check(not ProjectSettings.get_setting("application/boot_splash/show_image"), "engine boot logo is disabled")
-	check(app.boot_logo.texture.resource_path.ends_with("emnio_symbol.png") and app.boot_wordmark.texture.resource_path.ends_with("emnio_wordmark.png"), "first animated splash uses Emnio emblem and wordmark")
+	check(ProjectSettings.get_setting("application/config/version") == "1.2.0","project reports version1.2.0")
+	check(app.boot_logo.texture.resource_path.ends_with("emnio_games.png"), "first animated splash uses the new Emnio Games studio artwork")
 	check(app.boot_active and app.boot_done <= app.boot_paths.size(), "loading counter measures actual resource jobs")
 	check(app.boot_status.text.is_empty() and not app.boot_status.visible, "splash contains no loading status phrases")
 	await create_timer(2.8).timeout
@@ -110,17 +171,70 @@ func run() -> void:
 	check(app.music.playing,"menu music plays by default")
 	check(controls_in_view(), "menu controls fit current viewport")
 	check(english_page(),"menu presents English text")
-	press("SERPENTS")
+	press("CHANGE SERPENT")
+	await process_frame
+	check(app.current_page == "collection","CHANGE SERPENT toolbar opens the real collection")
+	press("BACK")
+	await process_frame
+	var skin_cells: Array = []
+	for candidate in descendants(app.screen,"Button"):
+		if candidate.tooltip_text in ["Volt Serpent","Inferno Viper","Frost Fang","Cyber Reaper","Shadow Phantom","Solar Wyrm","Neon Samurai","Toxic Fang"]:
+			skin_cells.append(candidate)
+	check(skin_cells.size() == 8,"lobby collection rail exposes all eight actual skins")
+	for candidate in skin_cells:
+		if candidate.tooltip_text == "Toxic Fang":
+			candidate.pressed.emit()
+	await process_frame
+	check(app.current_page == "shop" and app.collection_page == 1 and previews(app.overlay)[3].skin_id == 7,"locked rail skin opens its actual market page")
+	press("‹",app.overlay)
+	await process_frame
+	press("BACK")
+	await process_frame
+	var animated_preview: Control = previews(app.screen)[0]
+	var preview_clock: float = animated_preview.clock
+	var preview_pose: Vector2 = animated_preview.point_at(0.6)
+	check(animated_preview.hero_pose,"lobby presents the equipped serpent in its animated hero pose")
+	var hero_center: Vector2 = animated_preview.get_global_rect().get_center()-app.screen.global_position
+	check(hero_center.x > app.screen.size.x*0.4 and hero_center.x < app.screen.size.x*0.7,"selected serpent occupies the center of the lobby")
+	var feature_columns: Array[float] = []
+	for feature in ["SHOP","MISSIONS","REWARDS","RECORDS","ACHIEVEMENTS"]:
+		var feature_button := find_button(feature)
+		if feature_button != null:
+			feature_columns.append(feature_button.get_global_rect().get_center().x-app.screen.global_position.x)
+	check(feature_columns.size() == 5 and feature_columns.max() < app.screen.size.x*0.3,"all five functional features occupy the lobby's left column")
+	var start_button := find_button("START")
+	check(start_button != null,"lobby exposes the real START action")
+	if start_button != null:
+		var start_center: Vector2 = start_button.get_global_rect().get_center()-app.screen.global_position
+		check(start_center.x > app.screen.size.x*0.65 and start_center.y > app.screen.size.y*0.65,"START action occupies the lobby's lower right")
+	var atmosphere: Node = app.screen.get_node_or_null("Atmosphere")
+	check(atmosphere != null,"menu has an animated atmospheric layer")
+	var atmosphere_phase: float = float(atmosphere.phase) if atmosphere != null else -1.0
+	await create_timer(0.35).timeout
+	check(animated_preview.clock > preview_clock and animated_preview.point_at(0.6).distance_to(preview_pose) > 0.05,"equipped lobby serpent visibly changes pose over time")
+	if atmosphere != null:
+		check(float(atmosphere.phase) > atmosphere_phase,"ambient animation advances while menu is visible")
+	var collection_button := find_button("SERPENTS")
+	check(collection_button != null,"functional button exists: SERPENTS")
+	if collection_button != null:
+		var point: Vector2 = collection_button.get_global_rect().get_center()
+		mouse_button(point,true)
+		await create_timer(0.12).timeout
+		check(collection_button.scale.x < 0.995,"dispatched pointer press produces visible button feedback")
+		check(controls_in_view(),"button feedback keeps controls inside viewport")
+		mouse_button(point,false)
 	await process_frame
 	check(app.current_page == "collection", "collection opens")
 	check(previews(app.overlay).size() == 4,"collection renders four previews per page")
 	check(previews(app.overlay)[0].skin_id == 0 and previews(app.overlay)[3].skin_id == 3,"first collection page contains skins0 through3")
 	check(controls_in_view(),"first collection page stays inside screen")
+	check_power_timings()
 	press("›",app.overlay)
 	await process_frame
 	check(app.collection_page == 1,"next button changes collection page")
 	check(previews(app.overlay).size() == 4 and previews(app.overlay)[0].skin_id == 4 and previews(app.overlay)[3].skin_id == 7,"second page exposes all four additional skins")
 	check(controls_in_view() and english_page(),"second page fits screen and uses English descriptions")
+	check_power_timings()
 	press("‹",app.overlay)
 	await process_frame
 	press("150 COINS",app.overlay)
@@ -227,8 +341,8 @@ func run() -> void:
 	await process_frame
 	press("OFFLINE")
 	await process_frame
-	check(app.online_mode and find_button("PLAY ONLINE  ›") != null,"mode selector exposes actual online workflow")
-	press("PLAY ONLINE  ›")
+	check(app.online_mode and find_button("START ONLINE") != null,"mode selector exposes actual online workflow")
+	press("START ONLINE")
 	await process_frame
 	check(app.current_page == "online" and find_button("HOST ROOM") != null and find_button("JOIN ROOM") != null,"online page exposes host and join actions")
 	check(english_page() and controls_in_view(),"online connection page is English and fits viewport")
@@ -278,7 +392,7 @@ func run() -> void:
 	await process_frame
 	app.show_menu()
 	await process_frame
-	press("PLAY  ›")
+	press("START")
 	await process_frame
 	check(app.current_page == "game" and is_instance_valid(app.game),"play starts actual offline arena")
 	var arena: Node2D = app.game
@@ -286,9 +400,23 @@ func run() -> void:
 	check(arena.player.segment_count() <= 16,"player starts as a short serpent rather than large adult")
 	check(arena.foods.size() >= 200 and arena.snakes.size() >= 5,"arena creates real energy and bot competitors")
 	check(app.music.stream.resource_path.ends_with("music_arena.ogg") and not app.music.playing,"arena music track changes while preserving independent mute")
+	var initial_hud: Dictionary = arena.hud_state()
+	check(initial_hud.protection_remaining > 0.0 and initial_hud.protection_remaining <= 2.0,"spawn HUD reflects actual temporary protection")
+	check(initial_hud.danger == 0.0,"central spawn has no false boundary danger")
+	await process_frame
+	var initial_map: Dictionary = arena.minimap_state()
+	check_minimap(arena,initial_map)
+	var minimap_started: float = arena.elapsed
 	var start_position: Vector2 = arena.player.position
 	await create_timer(0.3).timeout
 	check(arena.player.position.distance_to(start_position) > 30,"snake continuously moves through physics updates")
+	check(arena.hud_state().protection_remaining < initial_hud.protection_remaining,"protection indicator counts down with simulation time")
+	var updated_map: Dictionary = arena.minimap_state()
+	var refreshes: int = int(updated_map.refresh_count)-int(initial_map.refresh_count)
+	var refresh_limit := ceili((arena.elapsed-minimap_started)/float(updated_map.refresh_interval))+1
+	check(float(updated_map.refresh_interval) >= 0.1 and refreshes >= 1 and refreshes <= refresh_limit,"actual minimap refresh count respects its capped update budget")
+	var updated_player_marker: Vector2 = updated_map.player
+	check(updated_player_marker.distance_to(initial_map.player) > 0.1 and (updated_player_marker-Vector2(updated_map.center)).normalized().dot(arena.player.position.normalized()) > 0.98,"minimap player indicator updates with real movement in the correct direction")
 	var old_score: int = arena.player.score
 	arena.foods[0].p = arena.player.position+Vector2.from_angle(arena.player.heading)*8
 	arena.foods[0].v = 8
@@ -296,6 +424,7 @@ func run() -> void:
 	arena.rebuild_food_grid()
 	await create_timer(0.1).timeout
 	check(arena.player.score >= old_score+8,"food collision increases real score")
+	check(arena.hud_state().pickup_total >= 8 and arena.hud_state().pickup_remaining > 0.0,"real energy collection activates pickup feedback")
 	var viewport_size: Vector2 = arena.get_viewport_rect().size
 	touch(0,arena.joystick_center(viewport_size)+Vector2(40,-20),true)
 	await process_frame
@@ -305,18 +434,46 @@ func run() -> void:
 	touch(2,arena.skill_center(viewport_size),true)
 	await process_frame
 	check(arena.player.cooldown > 0 and arena.player.active_time > 0 and arena.joystick_id == 0 and arena.boost_id == 1 and arena.skill_id == 2,"third touch activates power without dropping joystick or boost")
-	touch(0,Vector2.ZERO,false)
+	check(arena.hud_state().skill_remaining > 0.0,"active ability has a live HUD duration indicator")
 	touch(1,Vector2.ZERO,false)
+	await process_frame
+	check(arena.boost_id == -1 and arena.joystick_id == 0 and arena.skill_id == 2,"releasing boost preserves steering and ability fingers")
+	touch(3,arena.boost_center(viewport_size),true)
+	await process_frame
+	touch(0,Vector2.ZERO,false)
+	await process_frame
+	check(arena.joystick_id == -1 and arena.boost_id == 3 and arena.skill_id == 2,"releasing steering preserves independent boost and ability fingers")
 	touch(2,Vector2.ZERO,false)
 	await process_frame
+	check(arena.skill_id == -1 and arena.boost_id == 3,"releasing ability preserves held boost")
+	touch(3,Vector2.ZERO,false)
+	await process_frame
 	check(arena.joystick_id == -1 and arena.boost_id == -1,"touch release clears control owners")
-	touch(0,Vector2(viewport_size.x-45,40),true)
-	touch(0,Vector2(viewport_size.x-45,40),false)
+	touch(4,arena.boost_secondary_center(viewport_size),true)
+	await physics_frame
+	await process_frame
+	check(arena.boost_id == 4 and arena.player.boosting,"secondary center BOOST control drives actual acceleration")
+	touch(4,Vector2.ZERO,false)
+	touch(0,arena.joystick_center(viewport_size)+Vector2(40,0),true)
+	touch(1,arena.boost_center(viewport_size),true)
+	touch(2,Vector2(viewport_size.x-45,40),true)
+	touch(2,Vector2(viewport_size.x-45,40),false)
 	await process_frame
 	check(arena.paused,"dispatched pause touch pauses simulation")
+	check(arena.joystick_id == -1 and arena.boost_id == -1 and arena.skill_id == -1,"pause clears every held touch owner")
+	touch(0,Vector2.ZERO,false)
+	touch(1,Vector2.ZERO,false)
 	var paused_position: Vector2 = arena.player.position
 	await create_timer(0.15).timeout
 	check(arena.player.position == paused_position,"paused simulation stops movement")
+	arena.player.position = Vector2(arena.BOUNDS-180,0)
+	var outer_warning: float = arena.boundary_danger()
+	check(outer_warning > 0.0 and outer_warning < 1.0,"approaching real arena boundary triggers a graduated warning")
+	arena.player.position = Vector2(arena.BOUNDS-40,0)
+	check(arena.boundary_danger() > outer_warning and arena.hud_state().danger == arena.boundary_danger(),"boundary HUD intensifies as lethal edge approaches")
+	arena.player.position = Vector2.ZERO
+	check(arena.boundary_danger() == 0.0,"boundary warning clears when returning to safe center")
+	arena.player.position = paused_position
 	touch(0,viewport_size/2+Vector2(0,25),true)
 	touch(0,viewport_size/2+Vector2(0,25),false)
 	await process_frame
@@ -331,6 +488,10 @@ func run() -> void:
 	press("PLAY AGAIN")
 	await process_frame
 	check(app.current_page == "game" and app.game.player.alive,"restart begins fresh playable serpent")
+	touch(2,app.game.skill_center(app.game.get_viewport_rect().size),true)
+	await process_frame
+	check(app.game.skill_id == 2 and app.game.joystick_id == -1 and app.game.player.cooldown > 0.0,"standalone ability touch is not intercepted by the steering region")
+	touch(2,Vector2.ZERO,false)
 	app.game.end_game(true)
 	await process_frame
 	check(app.current_page == "menu" and app.profile.data.stats.runs == 1,"abandon returns to menu without farming rewards")

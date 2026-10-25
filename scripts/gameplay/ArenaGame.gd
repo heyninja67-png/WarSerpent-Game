@@ -38,6 +38,7 @@ var joystick_id := -1
 var boost_id := -1
 var skill_id := -1
 var joystick_vector := Vector2.ZERO
+var _steering_active := false
 var mouse_joystick := false
 var mouse_boost := false
 var boost_down := false
@@ -64,6 +65,21 @@ var _food_candidates: Array = []
 var _collision_candidates: Array = []
 var _world_offset := Vector2.ZERO
 var _view_rect := Rect2()
+var _pickup_remaining := 0.0
+var _pickup_total := 0
+var _shield_feedback_remaining := 0.0
+const MINIMAP_CENTER := Vector2(100, 98)
+const MINIMAP_RADIUS := 72.0
+const MINIMAP_REFRESH := 0.15
+var _minimap_remaining := MINIMAP_REFRESH
+var _minimap_refresh_count := 0
+var _minimap_markers: Array = []
+var _minimap_player := MINIMAP_CENTER
+var _minimap_view_rect := Rect2()
+const JOYSTICK_RADIUS := 70.0
+const JOYSTICK_ENTER := 0.18
+const JOYSTICK_EXIT := 0.12
+const BODY_SHADES := [Color(1, 1, 1), Color(0.97, 0.97, 0.97), Color(0.92, 0.92, 0.92), Color(0.97, 0.97, 0.97)]
 const FOOD_COLORS := [Color("62eeff"), Color("e7a4ff"), Color("ffce7f"), Color("9cfcbd")]
 const MAX_FOOD := 1500
 const MAX_BODY_INSTANCES := 1500
@@ -92,11 +108,84 @@ func set_player_name(value: String) -> void:
 	if player != null:
 		player.nickname = player_name
 
+func reset_controls() -> void:
+	joystick_id = -1
+	boost_id = -1
+	skill_id = -1
+	mouse_joystick = false
+	mouse_boost = false
+	boost_down = false
+	joystick_vector = Vector2.ZERO
+	_steering_active = false
+
 func toggle_pause() -> void:
 	paused = not paused
-	joystick_vector = Vector2.ZERO
-	mouse_boost = false
-	boost_id = -1
+	reset_controls()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		reset_controls()
+	elif what == NOTIFICATION_APPLICATION_PAUSED:
+		reset_controls()
+		if player != null and player.alive and not ended:
+			paused = true
+
+func update_joystick(point: Vector2, size: Vector2) -> void:
+	var raw := (point - joystick_center(size)) / JOYSTICK_RADIUS
+	var magnitude := minf(raw.length(), 1.0)
+	if _steering_active:
+		if magnitude <= JOYSTICK_EXIT:
+			_steering_active = false
+	elif magnitude >= JOYSTICK_ENTER:
+		_steering_active = true
+	if not _steering_active:
+		joystick_vector = Vector2.ZERO
+		return
+	# Remap the active radius smoothly to 0..1. No separate offline-only deadzone.
+	joystick_vector = raw.normalized() * clampf((magnitude - JOYSTICK_EXIT) / (1.0 - JOYSTICK_EXIT), 0.0, 1.0)
+
+func register_pickup_feedback(value: int) -> void:
+	if value <= 0:
+		return
+	_pickup_total += value
+	_pickup_remaining = 0.65
+
+func minimap_world_to_screen(world: Vector2) -> Vector2:
+	var scale_factor := (MINIMAP_RADIUS - 6.0) / (BOUNDS * sqrt(2.0))
+	return MINIMAP_CENTER + (world * scale_factor).limit_length(MINIMAP_RADIUS - 5.0)
+
+func update_minimap() -> void:
+	_minimap_markers.clear()
+	for snake in snakes:
+		if not snake.alive:
+			continue
+		var position_on_map := minimap_world_to_screen(snake.position)
+		var is_player := player != null and snake.id == player.id
+		_minimap_markers.append({"id": snake.id, "position": position_on_map, "player": is_player, "color": SKIN_COLORS[snake.skin]})
+		if is_player:
+			_minimap_player = position_on_map
+	var half_view := get_viewport_rect().size / maxf(camera_zoom, 0.01) / 2.0
+	var top_left := minimap_world_to_screen(camera_position - half_view)
+	var bottom_right := minimap_world_to_screen(camera_position + half_view)
+	_minimap_view_rect = Rect2(top_left, bottom_right - top_left)
+	_minimap_refresh_count += 1
+
+func minimap_state() -> Dictionary:
+	return {"center": MINIMAP_CENTER, "radius": MINIMAP_RADIUS,
+		"bounds": Rect2(MINIMAP_CENTER - Vector2.ONE * MINIMAP_RADIUS, Vector2.ONE * MINIMAP_RADIUS * 2),
+		"markers": _minimap_markers, "player": _minimap_player,
+		"view_rect": _minimap_view_rect, "refresh_count": _minimap_refresh_count, "refresh_interval": MINIMAP_REFRESH}
+
+func boundary_danger() -> float:
+	if player == null or not player.alive:
+		return 0.0
+	var clearance := BOUNDS - 14.0 - maxf(absf(player.position.x), absf(player.position.y))
+	return clampf(1.0 - clearance / 220.0, 0.0, 1.0)
+
+func hud_state() -> Dictionary:
+	return {"protection_remaining": player.invulnerable if player != null else 0.0,
+		"danger": boundary_danger(), "skill_remaining": player.active_time if player != null else 0.0,
+		"pickup_total": _pickup_total, "pickup_remaining": _pickup_remaining}
 
 func _ready() -> void:
 	font = ThemeDB.fallback_font
@@ -136,6 +225,7 @@ func _ready() -> void:
 	rebuild_body_grid()
 	invalidate_food_visuals()
 	update_ranking()
+	update_minimap()
 	set_process_input(true)
 
 func _exit_tree() -> void:
@@ -154,7 +244,7 @@ func initialize_multimeshes() -> void:
 	food_multimesh.instance_count = MAX_FOOD
 	food_multimesh.visible_instance_count = 0
 	var body_quad := QuadMesh.new()
-	body_quad.size = Vector2(29, 29)
+	body_quad.size = Vector2(31, 31)
 	_body_counts.resize(8)
 	for skin in range(8):
 		var multimesh := MultiMesh.new()
@@ -205,13 +295,22 @@ func spawn_bot(id: int) -> void:
 
 func _process(delta: float) -> void:
 	clock += delta
+	_minimap_remaining -= delta
+	if _minimap_remaining <= 0.0:
+		_minimap_remaining = MINIMAP_REFRESH
+		update_minimap()
 	_ranking_timer -= delta
 	if _ranking_timer <= 0.0:
 		_ranking_timer = 0.3
 		update_ranking()
 	if not paused and player != null:
+		_pickup_remaining = maxf(0.0, _pickup_remaining - delta)
+		_shield_feedback_remaining = maxf(0.0, _shield_feedback_remaining - delta)
+		if _pickup_remaining <= 0.0:
+			_pickup_total = 0
 		camera_position = camera_position.lerp(player.position, 1.0 - exp(-delta * 5.0))
-		var desired_zoom := clampf(1.02 - player.mass / 4500.0, 0.63, 0.98)
+		var desired_zoom := clampf(1.10 - player.mass / 6000.0, 0.66, 1.05)
+		desired_zoom += _pickup_remaining * (0.003 if quality == 0 else 0.008)
 		if player.boosting:
 			desired_zoom -= 0.08
 		camera_zoom = lerpf(camera_zoom, desired_zoom, 1.0 - exp(-delta * 2.0))
@@ -233,7 +332,7 @@ func _physics_process(delta: float) -> void:
 	var keyboard := Vector2(float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)), float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN)) - float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 	if keyboard.length_squared() > 0.0:
 		direction = keyboard.normalized()
-	var target := direction.angle() if direction.length() > 0.12 else player.heading
+	var target := direction.angle() if direction.length_squared() > 0.000001 else player.heading
 	boost_down = boost_id >= 0 or mouse_boost or Input.is_physical_key_pressed(KEY_SPACE)
 	if not local_player_control:
 		var controls: Dictionary = remote_controls.get(player.id, {})
@@ -335,6 +434,8 @@ func collect_food(snake: SnakeModel) -> void:
 			food.active = false
 			food.respawn = elapsed + randf_range(1.0, 3.0)
 			sync_food_visual(index)
+			if snake.id == player.id:
+				register_pickup_feedback(int(food.v))
 			if snake.id == player.id and pickup_sound_delay <= 0.0:
 				pickup_sound_delay = 0.12
 				play_effect("collect")
@@ -356,16 +457,27 @@ func check_collisions(snake: SnakeModel) -> void:
 		if snake.position.distance_squared_to(other.segments[segment_index]) > 18.0 * 18.0:
 			continue
 		if segment_index <= 2 and snake.position.distance_squared_to(other.position) < 22.0 * 22.0:
+			var had_shield := snake.shield
 			var first_lethal := snake.lethal_collision()
+			if had_shield and not snake.shield:
+				shield_absorbed(snake)
 			var second_lethal := other.lethal_collision()
 			if first_lethal:
 				kill_snake(snake, other)
 			if second_lethal:
 				kill_snake(other, snake)
 			return
+		var had_shield := snake.shield
 		if snake.lethal_collision():
 			kill_snake(snake, other)
+		elif had_shield and not snake.shield:
+			shield_absorbed(snake)
 		return
+
+func shield_absorbed(snake: SnakeModel) -> void:
+	if snake.id == player.id:
+		_shield_feedback_remaining = 0.45
+		add_spark(snake.position, SKIN_COLORS[snake.skin], 5 if quality == 0 else 12)
 
 func apply_abilities(delta: float) -> void:
 	trail_timer -= delta
@@ -480,7 +592,7 @@ func _input(event: InputEvent) -> void:
 	var size := get_viewport_rect().size
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE or event.keycode == KEY_P:
-			paused = not paused
+			toggle_pause()
 		elif event.keycode == KEY_E:
 			use_skill()
 	if event is InputEventScreenTouch:
@@ -490,10 +602,10 @@ func _input(event: InputEvent) -> void:
 				return
 			if paused:
 				return
-			if point.x < size.x * 0.46 and point.y > size.y * 0.4 and joystick_id < 0:
+			if point.x < size.x * 0.46 and point.y > size.y * 0.4 and joystick_id < 0 and point.distance_to(skill_center(size)) > 60.0:
 				joystick_id = event.index
-				joystick_vector = (point - joystick_center(size)).limit_length(70.0) / 70.0
-			elif point.distance_to(boost_center(size)) < 68.0:
+				update_joystick(point, size)
+			elif boost_hit(point, size):
 				boost_id = event.index
 			elif point.distance_to(skill_center(size)) < 60.0:
 				skill_id = event.index
@@ -502,43 +614,42 @@ func _input(event: InputEvent) -> void:
 			if event.index == joystick_id:
 				joystick_id = -1
 				joystick_vector = Vector2.ZERO
+				_steering_active = false
 			if event.index == boost_id:
 				boost_id = -1
 			if event.index == skill_id:
 				skill_id = -1
 	elif event is InputEventScreenDrag and event.index == joystick_id:
-		joystick_vector = (event.position - joystick_center(size)).limit_length(70.0) / 70.0
+		update_joystick(event.position, size)
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			if handle_interface_click(event.position, size):
 				return
 			if paused:
 				return
-			if event.position.distance_to(boost_center(size)) < 70.0:
+			if boost_hit(event.position, size):
 				mouse_boost = true
 			elif event.position.distance_to(skill_center(size)) < 60.0:
 				use_skill()
 			elif event.position.x < size.x * 0.46 and event.position.y > size.y * 0.4:
 				mouse_joystick = true
-				joystick_vector = (event.position - joystick_center(size)).limit_length(70.0) / 70.0
+				update_joystick(event.position, size)
 		else:
 			mouse_joystick = false
 			mouse_boost = false
 			if joystick_id < 0:
 				joystick_vector = Vector2.ZERO
+				_steering_active = false
 	elif event is InputEventMouseMotion and mouse_joystick:
-		joystick_vector = (event.position - joystick_center(size)).limit_length(70.0) / 70.0
+		update_joystick(event.position, size)
 
 func handle_interface_click(point: Vector2, size: Vector2) -> bool:
 	if Rect2(size.x - 69, 19, 48, 44).has_point(point):
-		paused = not paused
-		joystick_vector = Vector2.ZERO
-		mouse_boost = false
-		boost_id = -1
+		toggle_pause()
 		return true
 	if paused:
 		if Rect2(size.x / 2 - 160, size.y / 2 + 2, 320, 56).has_point(point):
-			paused = false
+			toggle_pause()
 		elif Rect2(size.x / 2 - 160, size.y / 2 + 76, 320, 56).has_point(point):
 			end_game(true)
 		return true
@@ -551,7 +662,13 @@ func boost_center(size: Vector2) -> Vector2:
 	return Vector2(size.x - 112, size.y - 116)
 
 func skill_center(size: Vector2) -> Vector2:
-	return Vector2(size.x - 246, size.y - 147)
+	return Vector2(size.x / 2.0 - 52, size.y - 106)
+
+func boost_secondary_center(size: Vector2) -> Vector2:
+	return Vector2(size.x / 2.0 + 52, size.y - 106)
+
+func boost_hit(point: Vector2, size: Vector2) -> bool:
+	return point.distance_to(boost_center(size)) < 68.0 or point.distance_to(boost_secondary_center(size)) < 45.0
 
 func visible(at: Vector2, margin: float = 80.0) -> bool:
 	return _view_rect.grow(margin).has_point(at)
@@ -605,7 +722,9 @@ func draw_body_batches() -> void:
 				break
 			var angle := (snake.segments[index - 1] - at).angle()
 			multimesh.set_instance_transform_2d(instance, Transform2D(angle, at))
-			multimesh.set_instance_color(instance, tint)
+			var shade: Color = BODY_SHADES[index & 3]
+			shade.a = tint.a
+			multimesh.set_instance_color(instance, shade)
 			_body_counts[snake.skin] += 1
 	for skin in range(8):
 		body_multimeshes[skin].visible_instance_count = _body_counts[skin]
@@ -618,7 +737,7 @@ func draw_arena() -> void:
 	var top := maxf(-BOUNDS, camera_position.y - get_viewport_rect().size.y / camera_zoom / 2 - 100)
 	var bottom := minf(BOUNDS, camera_position.y + get_viewport_rect().size.y / camera_zoom / 2 + 100)
 	if textures.has("arenas/neon_city"):
-		draw_texture_rect(textures["arenas/neon_city"], Rect2(-BOUNDS, -BOUNDS, BOUNDS * 2, BOUNDS * 2), true, Color(0.6, 0.65, 0.8, 0.45))
+		draw_texture_rect(textures["arenas/neon_city"], Rect2(-BOUNDS, -BOUNDS, BOUNDS * 2, BOUNDS * 2), true, Color.WHITE)
 	else:
 		draw_rect(Rect2(-BOUNDS, -BOUNDS, BOUNDS * 2, BOUNDS * 2), Color("081323"))
 	for x in range(floori(left / 180.0), ceili(right / 180.0)) if quality == 2 else []:
@@ -649,7 +768,9 @@ func draw_snake(snake: SnakeModel) -> void:
 		draw_sprite("tail%d" % snake.skin, points[-1], (points[-2] - points[-1]).angle(), Vector2(35, 25), tint)
 	if not visible(snake.position):
 		return
-	draw_sprite("head%d" % snake.skin, snake.position, snake.heading, Vector2(42, 37), tint)
+	if quality > 0 and snake.boosting and textures.has("effects/energy"):
+		draw_sprite("effects/energy", snake.position, 0, Vector2(68, 68), Color(color, 0.18))
+	draw_sprite("head%d" % snake.skin, snake.position, snake.heading, Vector2(46, 40), tint)
 	if quality == 2 and (snake.boosting or snake.active_time > 0.0):
 		draw_circle(snake.position, 40, Color(color, 0.055))
 		draw_arc(snake.position, 35, clock * 1.5, clock * 1.5 + PI * 1.4, 24, Color(color, 0.25), 2)
@@ -683,64 +804,104 @@ func centered(at: Vector2, content: String, size: int, color: Color) -> void:
 	var width := font.get_string_size(content, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	text(at - Vector2(width / 2, 0), content, size, color)
 
+func draw_minimap() -> void:
+	draw_circle(MINIMAP_CENTER, MINIMAP_RADIUS + 4, Color(0.035, 0.04, 0.11, 0.85))
+	draw_circle(MINIMAP_CENTER, MINIMAP_RADIUS, Color(0.07, 0.08, 0.17, 0.73))
+	draw_arc(MINIMAP_CENTER, MINIMAP_RADIUS + 1, 0, TAU, 56, Color("6adeee"), 2)
+	var arena_half := (MINIMAP_RADIUS - 6) / sqrt(2.0)
+	draw_rect(Rect2(MINIMAP_CENTER - Vector2.ONE * arena_half, Vector2.ONE * arena_half * 2), Color(0.46, 0.5, 0.79, 0.35), false, 1)
+	draw_line(MINIMAP_CENTER - Vector2(arena_half, 0), MINIMAP_CENTER + Vector2(arena_half, 0), Color(0.4, 0.5, 0.8, 0.1), 1)
+	draw_line(MINIMAP_CENTER - Vector2(0, arena_half), MINIMAP_CENTER + Vector2(0, arena_half), Color(0.4, 0.5, 0.8, 0.1), 1)
+	draw_rect(_minimap_view_rect, Color(0.45, 0.9, 1, 0.32), false, 1)
+	for marker: Dictionary in _minimap_markers:
+		if marker.player:
+			continue
+		draw_circle(marker.position, 2.7, Color(marker.color, 0.95))
+	draw_circle(_minimap_player, 6.0, Color(0.5, 0.95, 1, 0.2))
+	draw_circle(_minimap_player, 3.8, Color("f5feff"))
+	draw_arc(_minimap_player, 7.5, 0, TAU, 16, Color("78f7ff"), 1)
+	centered(Vector2(MINIMAP_CENTER.x, 16), "NEON CITY", 10, Color("b8cee9"))
+
+func draw_power_button(at: Vector2, icon: Texture2D, caption: String, ready_fraction: float, color: Color, hint: String = "") -> void:
+	draw_circle(at, 44, Color(0.035, 0.045, 0.095, 0.86))
+	draw_arc(at, 43, 0, TAU, 36, Color(color, 0.18), 4)
+	draw_arc(at, 43, -PI / 2, -PI / 2 + TAU * clampf(ready_fraction, 0.001, 1.0), 36, color, 3)
+	if icon != null:
+		draw_texture_rect(icon, Rect2(at - Vector2.ONE * 26, Vector2.ONE * 52), false, Color.WHITE if ready_fraction >= 0.99 or caption.begins_with("BOOST") else Color(0.6, 0.63, 0.8, 0.5))
+	if not hint.is_empty():
+		centered(at + Vector2(0, 8), hint, 25, Color.WHITE)
+	centered(at + Vector2(0, 62), caption, 10, Color("d1e4f4"))
+
 func draw_hud(size: Vector2) -> void:
 	var accent: Color = SKIN_COLORS[player.skin]
-	panel(Rect2(22, 20, 256, 88))
-	text(Vector2(40, 44), "NEON CITY   /   " + player.nickname, 13, Color("9bb3d1"))
-	text(Vector2(40, 82), "%05d" % player.score, 30, accent)
-	text(Vector2(151, 79), "POINTS", 12, Color("8dacc8"))
-	panel(Rect2(22, 118, 256, 43))
-	text(Vector2(37, 145), "LENGTH %d   /   KILLS %d" % [player.segment_count(), player.kills], 14, Color("b7cee4"))
-	panel(Rect2(size.x - 256, 78, 234, 224))
-	text(Vector2(size.x - 237, 105), "TOP SERPENTS", 16, Color("80e7ff"))
-	var ranking := _ranking
-	var rank := _player_rank
-	for i in range(mini(5, ranking.size())):
-		var snake := ranking[i]
-		var color := accent if snake.id == 0 else Color("a4bbd1")
-		text(Vector2(size.x - 237, 136 + i * 27), "%d  %s" % [i + 1, snake.nickname.left(10)], 13, color)
-		text(Vector2(size.x - 77, 136 + i * 27), str(snake.score), 13, color)
-	text(Vector2(size.x - 237, 283), "YOUR RANK  #%d / %d" % [rank, snakes.size()], 12, accent)
-	panel(Rect2(size.x - 69, 19, 48, 44))
+	draw_minimap()
+	# Compact headers leave the arena and characters exposed.
+	panel(Rect2(size.x / 2 - 82, 12, 164, 66), Color(0.045, 0.055, 0.12, 0.62), Color("3f4974"))
+	centered(Vector2(size.x / 2, 31), "TIME", 11, Color("c9cde9"))
+	centered(Vector2(size.x / 2, 63), "%02d:%02d" % [int(elapsed) / 60, int(elapsed) % 60], 28, Color("78f3ff"))
+	centered(Vector2(size.x / 2, 94), arena_label, 10, Color("9baccd"))
+	var score_center := Vector2(size.x - 326, 0)
+	panel(Rect2(score_center.x - 59, 12, 118, 66), Color(0.045, 0.055, 0.12, 0.62), Color("3f4974"))
+	centered(Vector2(score_center.x, 31), "SCORE", 11, Color("c9cde9"))
+	centered(Vector2(score_center.x, 63), str(player.score), 28, accent)
+	# Ten real competitors; no opaque leaderboard card over the action.
+	var board_x := size.x - 218
+	text(Vector2(board_x, 98), "TOP SERPENTS", 12, Color("d2e6fa"))
+	draw_line(Vector2(board_x, 108), Vector2(size.x - 24, 108), Color(0.45, 0.65, 0.9, 0.35), 1)
+	for i in range(mini(10, _ranking.size())):
+		var snake := _ranking[i]
+		var color := accent if snake.id == player.id else Color("c3cadf")
+		var y := 128 + i * 21
+		if snake.id == player.id:
+			draw_rect(Rect2(board_x - 5, y - 14, 199, 19), Color(accent, 0.1))
+		text(Vector2(board_x, y), str(i + 1), 12, color)
+		text(Vector2(board_x + 24, y), snake.nickname.left(11), 12, color)
+		text(Vector2(size.x - 65, y), str(snake.score), 12, color)
+	text(Vector2(board_x, 143 + mini(10, _ranking.size()) * 21), "YOU  #%d / %d" % [_player_rank, snakes.size()], 11, accent)
+	panel(Rect2(size.x - 69, 19, 48, 44), Color("142036"), Color("52648a"))
 	centered(Vector2(size.x - 45, 48), "Ⅱ", 22, Color("bbe3f5"))
-	centered(Vector2(size.x / 2, 33), "%02d:%02d" % [int(elapsed) / 60, int(elapsed) % 60], 17, Color("b3ccdf"))
-	centered(Vector2(size.x / 2, 54), arena_label, 11, Color("637f9a"))
 	var joy := joystick_center(size)
-	draw_circle(joy, 77, Color(0.03, 0.09, 0.17, 0.67))
-	draw_arc(joy, 72, 0, TAU, 48, Color(0.3, 0.7, 0.9, 0.35), 2)
-	draw_arc(joy, 58, 0, TAU, 48, Color(0.4, 0.8, 1.0, 0.09), 10)
-	var knob := joy + joystick_vector * 47
 	if textures.has("hud/joystick"):
-		draw_texture_rect(textures["hud/joystick"], Rect2(joy - Vector2.ONE * 74, Vector2.ONE * 148), false, Color(1, 1, 1, 0.45))
-	draw_circle(knob, 29, Color("19354b"))
-	draw_arc(knob, 28, 0, TAU, 32, Color(0.38, 0.85, 1.0, 0.7), 2)
-	draw_circle(knob, 8, Color(0.4, 0.86, 1.0, 0.28))
-	centered(joy + Vector2(0, 103), "MOVE", 12, Color("688ca7"))
+		draw_texture_rect(textures["hud/joystick"], Rect2(joy - Vector2.ONE * 76, Vector2.ONE * 152), false, Color(1, 1, 1, 0.60))
+	else:
+		draw_circle(joy, 72, Color(0.05, 0.09, 0.16, 0.7))
+		draw_arc(joy, 72, 0, TAU, 40, Color(0.4, 0.8, 1, 0.4), 2)
+	var knob := joy + joystick_vector * 47
+	draw_circle(knob, 27, Color("213950"))
+	draw_arc(knob, 26, 0, TAU, 28, Color("80dbea"), 2)
+	centered(joy + Vector2(0, 99), "MOVE", 11, Color("9bb1cc"))
 	var boost := boost_center(size)
-	draw_circle(boost, 62, Color("10263a"))
-	draw_arc(boost, 60, 0, TAU, 48, Color(accent, 0.95 if boost_down else 0.4), 3)
+	draw_circle(boost, 60, Color(0.045, 0.055, 0.12, 0.78))
+	draw_arc(boost, 58, -PI / 2, TAU - PI / 2, 44, Color(accent, 0.85 if boost_down else 0.45), 4)
 	if textures.has("hud/boost"):
-		draw_texture_rect(textures["hud/boost"], Rect2(boost - Vector2(31, 45), Vector2(62, 62)), false, accent)
-	else:
-		centered(boost + Vector2(0, -5), "»", 47, accent)
-	centered(boost + Vector2(0, 23), "BOOST", 13, Color.WHITE)
-	centered(boost + Vector2(0, 84), "HOLD", 10, Color("7c9cb7"))
+		draw_texture_rect(textures["hud/boost"], Rect2(boost - Vector2(34, 44), Vector2(68, 68)), false, accent)
+	centered(boost + Vector2(0, 29), "BOOST", 13, Color.WHITE)
+	centered(boost + Vector2(0, 82), "HOLD", 10, Color("9eafd0"))
 	var skill := skill_center(size)
-	draw_circle(skill, 46, Color("172139"))
-	var ready := player.cooldown <= 0.0
-	draw_arc(skill, 44, -PI / 2, -PI / 2 + TAU * clampf(1.0 - player.cooldown / SnakeModel.COOLDOWNS[player.skin], 0.001, 1.0), 48, accent, 3)
-	if ready and textures.has("icons/ability_%d" % player.skin):
-		draw_texture_rect(textures["icons/ability_%d" % player.skin], Rect2(skill - Vector2.ONE * 28, Vector2.ONE * 56), false)
-	else:
-		centered(skill + Vector2(0, 8), str(ceili(player.cooldown)), 27, Color("8599b0"))
-	centered(skill + Vector2(0, 67), SKILL_NAMES[player.skin], 10, Color("c1d5e6"))
+	var ready_fraction: float = 1.0 - player.cooldown / SnakeModel.COOLDOWNS[player.skin]
+	var ability_icon: Texture2D = textures.get("icons/ability_%d" % player.skin)
+	draw_power_button(skill, ability_icon, SKILL_NAMES[player.skin], ready_fraction, accent, "" if player.cooldown <= 0 else str(ceili(player.cooldown)))
+	# The second center widget is another real hold area for boost, not an invented power.
+	var mass_fraction := clampf((player.mass - SnakeModel.MIN_MASS) / 80.0, 0, 1)
+	draw_power_button(boost_secondary_center(size), textures.get("hud/boost"), "BOOST · HOLD", mass_fraction, Color("ffcf79"))
+	centered(Vector2(size.x / 2, size.y - 177), "%s  ·  LENGTH %d  ·  KILLS %d" % [player.nickname, player.segment_count(), player.kills], 11, Color("c4cce2"))
+	if _pickup_remaining > 0.0:
+		centered(Vector2(size.x / 2, size.y - 201), "+%d ENERGY" % _pickup_total, 15, Color(accent, minf(1.0, _pickup_remaining * 3.0)))
+	if player.invulnerable > 0.0 and not (player.skin == 4 and player.active_time > 0.0):
+		centered(Vector2(size.x / 2, 115), "PROTECTED · %.1fs" % player.invulnerable, 12, Color("a9edff"))
+	if _shield_feedback_remaining > 0.0:
+		centered(Vector2(size.x / 2, size.y / 2 - 90), "SHIELD ABSORBED", 19, Color("b4eaff"))
+	var danger := boundary_danger()
+	if danger > 0.0:
+		draw_boundary_warning(size, danger)
 	if player.active_time > 0.0:
-		panel(Rect2(size.x / 2 - 140, size.y - 86, 280, 38), Color("152d3c"), accent)
-		centered(Vector2(size.x / 2, size.y - 61), SKILL_NAMES[player.skin] + " ACTIVE", 14, accent)
+		centered(Vector2(size.x / 2, size.y - 156), "%s · %.1fs" % [SKILL_NAMES[player.skin], player.active_time], 12, accent)
+		draw_rect(Rect2(size.x / 2 - 90, size.y - 149, 180, 3), Color("28324a"))
+		draw_rect(Rect2(size.x / 2 - 90, size.y - 149, 180 * clampf(player.active_time / SnakeModel.DURATIONS[player.skin], 0, 1), 3), accent)
 	elif player.slow_time > 0.0:
-		centered(Vector2(size.x / 2, size.y - 67), "SLOWED", 14, Color("9fdfff"))
+		centered(Vector2(size.x / 2, size.y - 156), "SLOWED", 13, Color("9fdfff"))
 	if elapsed < 7.0:
-		centered(Vector2(size.x / 2, size.y - 31), "COLLECT ENERGY  ·  AVOID OTHER SNAKES AND THE EDGE  ·  E: ABILITY", 12, Color("88a9c4"))
+		centered(Vector2(size.x / 2, size.y - 13), "COLLECT ENERGY · AVOID SNAKES AND THE EDGE · E: ABILITY", 10, Color("a5b8d4"))
 	if death_delay >= 0.0:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.1, 0.01, 0.1, 0.35))
 		centered(size / 2, "ELIMINATED", 36, Color("ff8fb9"))
@@ -753,3 +914,20 @@ func draw_hud(size: Vector2) -> void:
 		centered(Vector2(size.x / 2, size.y / 2 + 37), "RESUME", 18, accent)
 		panel(Rect2(size.x / 2 - 160, size.y / 2 + 76, 320, 56))
 		centered(Vector2(size.x / 2, size.y / 2 + 111), "BACK TO MENU", 17, Color("aec3d9"))
+
+func draw_boundary_warning(size: Vector2, danger: float) -> void:
+	var edge_color := Color(1.0, 0.28, 0.42, 0.15 + danger * 0.45)
+	var direction := Vector2(-signf(player.position.x), 0) if absf(player.position.x) > absf(player.position.y) else Vector2(0, -signf(player.position.y))
+	if direction.x != 0:
+		var x := 0.0 if player.position.x < 0 else size.x - 9.0
+		draw_rect(Rect2(x, 0, 9, size.y), edge_color)
+	else:
+		var y := 0.0 if player.position.y < 0 else size.y - 9.0
+		draw_rect(Rect2(0, y, size.x, 9), edge_color)
+	var at := Vector2(size.x / 2 - 115, 157)
+	panel(Rect2(size.x / 2 - 145, 137, 290, 44), Color("351b2d"), Color("e76489"))
+	var tip := at + direction * 12
+	draw_line(at - direction * 8, tip, Color("ff9db5"), 3, true)
+	draw_line(tip, tip - direction.rotated(0.65) * 9, Color("ff9db5"), 3, true)
+	draw_line(tip, tip - direction.rotated(-0.65) * 9, Color("ff9db5"), 3, true)
+	centered(Vector2(size.x / 2 + 12, 166), "ARENA EDGE · TURN INWARD", 13, Color("ffc4cf"))

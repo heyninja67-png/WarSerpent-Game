@@ -1,21 +1,27 @@
 ANDROID APK VALIDATION — FINAL War Serpent.io
-Executed: 2026-10-25T01:07:10.502314+00:00, current cloud machine.
+Executed: 2026-10-25T01:34:05.310701+00:00, current cloud machine.
 
 Artifact: builds/WarSerpentIO-debug.apk
-Size: 56276085 bytes (53.67 MiB)
-SHA256: a39e98986e79775ad9398917fd442b09aa86ad63d47888d85c54bc0922a70a9c
+Size: 64618982 bytes (61.63 MiB)
+SHA256: 35be5b36daf6fd860d8090a6e7cc0159a27cfa59e6ae8d8492436438c69059e4
 Build command: ./tools/build_android.sh
 Independent validation: python3 tools/validate_android.py
 Full final build log: builds/android-build.log
 Full validation output: docs/apk_validation_details.txt
 Outcome: exit0; APK exported, narrowly manifest-corrected, aligned, re-signed,
-and independently validated after v1.1 performance/UI/audio/multiplayer changes; same signing certificate as v1.0.
-Source Main.gd SHA256: e91de8fa901bdceaef56f4e0c204a2781bb6ef10cb94ba5fc89bdc498ec1f601
-Source ArenaGame.gd SHA256: 6a1503e41fac2b712aa144f860707aa5fac1db5cb2d96974932e07cf88bc60de
-Source OnlineArena.gd SHA256: d4f4ac424f15a619d5d598ab4391729378a1573ce06279641e167f91c0a3ae2d
+and independently validated after v1.2 branding/UI/gameplay-polish changes; same signing certificate as prior versions.
+Source Main.gd SHA256: 5c36e52c624379cfa5d252b1d2f53759add9b49ab31321d80825982f155e94ec
+Source ArenaGame.gd SHA256: 22ab716a2bd080e086acef98e1823bd22b19dac9547ca3ed88e4286aff70f2f3
+Source OnlineArena.gd SHA256: 80133513e8d488dde6ea7156531ad07f5a7d0da007ed975a04617f060aa5ed9b
+Source MenuAtmosphere.gd SHA256: 09ffbc5f4d15a4586bbbadf4b3915e828dd81fe641e70520c76d17b9c987ed07
+Source LobbyPlatform.gd SHA256: 94d819b78c24b01deac52362c554aff59a9c16d362a3c518cd3a57449655d440
+Source SerpentPreview.gd SHA256: 1ba4618c4242dd85f845688a00b5a8dfc75dd6fd3a59f6fef4e24d400c74a605
+Source logo PNG SHA256: 0ce05f1ed3967e65dac22b644119871d6d573f13d3413535a8c8db8a1b9da933
+Source icon PNG SHA256: 5447fc09451a307ce147bbf0e54c2961be6f8fee8990aee97e6e755ac6c17e70
+Source Emnio Games PNG SHA256: 42cef8383f63f1a3a239860df3162aa803f2b298c64ea35a0f6c6ab785666f0f
 
 Manifest (aapt badging+xmltree, exit0):
-- package com.emnioggs.warserpent; label War Serpent.io; v1.1.0/code2.
+- package com.emnioggs.warserpent; label War Serpent.io; v1.2.0/code3.
 - min API24, target/compile API36, landscape0, release-template build (debuggable=false).
 - same development signing identity as v1.0; filename retained for download compatibility.
 - OpenGL ES3, GL Compatibility renderer; INTERNET permission for real direct multiplayer; no camera/microphone/storage permissions.
@@ -35,10 +41,18 @@ Executable/resources:
 - four native libraries for ARM64 and ARMv7 present with actual ELF headers;
   every payload SHA256 matches the verified official RELEASE template byte-for-byte.
 - compiled Main.scn, Main.gdc, ArenaGame.gdc, Profile.gdc, snake_model.gdc,
-  arena_brain.gdc and spatial_hash.gdc packaged.
+  arena_brain.gdc, spatial_hash.gdc, MenuAtmosphere.gdc, LobbyPlatform.gdc and SerpentPreview.gdc packaged.
 - data/catalog.json parsed and exactly matches source JSON; eight skins.
-- 185 packaged Godot asset resources, including 77 imported assets.
+- 219 packaged Godot asset resources, including 92 imported assets.
 - snake/UI/branding texture and audio resources included.
+- 146 actual packaged-resource assertions passed.
+- packed War Serpent logo, app icon, Emnio Games studio logo, purple arena floor
+  and all24 head/body/tail sprite files reconstructed to RGBA8 match current
+  source pixels exactly after importer alpha-edge fix; detects stale art.
+- decoded logo: {'height': 809, 'pixel_sha256': '13e9b52a5fbc05a8cbe91101838827237be992652e8b75c76c53a991a0f65a8d', 'width': 1942};
+  decoded icon: {'height': 1254, 'pixel_sha256': '03d031de5eda1b50e70c8c9c383c9bbded3f42385f3127f779b1e71892ca3ec1', 'width': 1254};
+  decoded Emnio Games: {'height': 793, 'pixel_sha256': '3fcafd17dbfedc0a292bbbea73e7d67e164467172680d37183a34e02f328a043', 'width': 1983}.
+- both packed fonts load and cover English upper/lowercase letters and digits.
 - actual packed project.binary: boot_splash/show_image=false, viewport aspect=expand.
 - actual Android runtime arguments include --fullscreen and --edge_to_edge.
 - all six native adaptive foreground densities exactly match the original custom icon

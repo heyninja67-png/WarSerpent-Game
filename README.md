@@ -1,4 +1,4 @@
-# War Serpent.io — Emnio — v1.1.0
+# War Serpent.io — Emnio Games — v1.2.0
 
 A native Godot 4.6.3 Android serpent arena. English UI, eight distinct serpents, real offline AI, direct-connect multiplayer, synthwave music and persistent local progression.
 
@@ -9,12 +9,21 @@ A native Godot 4.6.3 Android serpent arena. English UI, eight distinct serpents,
 - [Latest releases](https://github.com/heyninja67-png/WarSerpent-Game/releases)
 - Application ID: `com.emnioggs.warserpent`.
 - Android 7.0/API 24+, ARM64 or ARMv7, OpenGL ES 3; target API 36.
-- Version 1.1.0, version code 2. The signing certificate is unchanged from v1.0.0, so install over the previous APK to retain your save. Do not uninstall first.
+- Version 1.2.0, version code 3. The signing certificate is unchanged from v1.0.0, so install over the previous APK to retain your save. Do not uninstall first.
 - Release-mode optimized engine export, signed with the existing development identity. This is a sideload build, not a Play Store release.
 
 The current machine has no Android device/emulator. Read [BUILD_REPORT.md](BUILD_REPORT.md) for what was actually tested, benchmark limits, and APK verification.
 
-## What changed
+## New in 1.2
+
+- A new original War Serpent.io wordmark and serpent emblem, with matching Android icon.
+- Game-style lobby: top profile/currencies, left feature navigation, a large coiled serpent on an animated podium, a live collection rail, and a gold START button at bottom right. Collection cards show ability timings; results and touch feedback stay functional.
+- More responsive small-snake steering, joystick deadzone hysteresis and reliable input reset after pause/focus changes.
+- Clearer spawn protection, power duration, pickups and arena-boundary warnings.
+- Circular live minimap, compact time/score/leaderboard, grouped real power controls, a purple raised-block arena and eight glossy expressive serpent designs. Instanced rendering remains enabled.
+- A new original Emnio Games studio logo and animated opening, without loading slogans.
+
+## Included features
 
 - Smaller starting snake; mass and length grow by collecting energy.
 - Rendering and AI optimized, lower mobile Auto budget, cached sounds/UI resources and bounded effect/food pools. Actual before/after server measurements are in the performance report; they are not phone FPS guarantees.

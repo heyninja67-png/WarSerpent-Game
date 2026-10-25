@@ -1,16 +1,16 @@
-# Architecture — v1.1
+# Architecture — v1.2
 
 Godot4.6.3, GDScript, native Android GL Compatibility. No web runtime or external game service is required for offline play.
 
 ## Entrypoint / UI
 
-`scenes/Main.tscn` → `scripts/ui/Main.gd`: loads profile, shows custom animated Emnio/game branding while real resource jobs finish, then presents the animated menu. UI content uses a centered1280×720 safe frame; background and gameplay cover the expanded viewport. Music is streamed from two looped OGGs. SFX and preview textures are cached. `SerpentPreview.gd` redraws at24Hz rather than allocating/loading per frame. Eight cards are paginated four at a time.
+`scenes/Main.tscn` → `scripts/ui/Main.gd`: loads profile, shows custom animated Emnio/game branding while real resource jobs finish, then presents the animated menu. The game lobby has top profile/currencies, left navigation, a central coiled-serpent hero/podium, a functional collection rail and bottom-right gold START/mode selector. UI content uses a centered1280×720 safe frame with Android display-cutout insets; background and gameplay cover the expanded viewport. Music is streamed from two looped OGGs. SFX and preview textures are cached. `SerpentPreview.gd` redraws at24Hz rather than allocating/loading per frame. Eight cards are paginated four at a time. The opening uses the complete original Emnio Games mark; there are no loading slogans.
 
 ## Simulation
 
-`SnakeModel` stores a fixed-capacity distance-sampled ring history. The body reuses its PackedVector2Array and interpolates evenly spaced segments. A fresh player starts at mass36/ten segments, with boost floor12. Models share movement, powers, collection and damage rules between bots, local humans and remote humans.
+`SnakeModel` stores a fixed-capacity distance-sampled ring history. The body reuses its PackedVector2Array and interpolates evenly spaced segments. A fresh player starts at mass36/ten segments, with boost floor12. Small snakes steer at4.8rad/s, tapering toward3.8 as they grow. Input updates apply radial hysteresis once before offline/network steering; focus loss and pause clear all input ownership. Models share movement, powers, collection and damage rules between bots, local humans and remote humans.
 
-`ArenaGame` owns pools of food, snakes, bounded effects, collision/food grids, camera, controls and HUD. Food uses one tintable texture/MultiMesh; bodies use one MultiMesh per skin. Heads/tails/labels remain individual. HUD styles and ranking are cached. Physics uses60Hz; rendering is budgeted to30/60. Low/Medium/High budgets are5/7/9bots and420/650/1000food. Mobile Auto starts Low. See PERFORMANCE_V1_1.md for controlled comparisons.
+`ArenaGame` owns pools of food, snakes, bounded effects, collision/food grids, camera, controls and HUD. The HUD includes a throttled real circular minimap, compact elapsed time/score/leaderboard, and real equipped-power/boost controls; markers come from actual snake positions. Food uses one tintable texture/MultiMesh; bodies use one MultiMesh per skin. Heads/tails/labels remain individual. HUD styles and ranking are cached. Physics uses60Hz; rendering is budgeted to30/60. Low/Medium/High budgets are5/7/9bots and420/650/1000food. Mobile Auto starts Low. See PERFORMANCE_V1_1.md for controlled comparisons.
 
 `ArenaBrain` samples local food/body candidates through spatial hashes and makes staggered steering/boost/power decisions. It avoids edges/bodies and may pursue weak rivals on higher difficulty. AI obeys the same collision rules as humans.
 

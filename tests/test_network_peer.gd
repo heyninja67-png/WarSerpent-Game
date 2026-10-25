@@ -13,6 +13,7 @@ var saw_peer := false
 var done := false
 var app: Node
 var joined_at := -1.0
+var tiny_direction_observed := false
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -98,7 +99,16 @@ func _process(delta: float) -> bool:
 				previous_position = arena.player.position
 				arena.use_skill()
 				sent_skill = true
-			arena.joystick_vector = Vector2.from_angle(elapsed * -1.0)
+			if mode == "client" and elapsed < 1.1:
+				# Enter the shared radial gate, then remain just above its exit radius.
+				# The filtered amplitude is ~0.011: a second 12% client gate would drop it.
+				var center: Vector2 = arena.joystick_center(arena.get_viewport_rect().size)
+				arena.update_joystick(center + Vector2.RIGHT * arena.JOYSTICK_RADIUS * 0.20, arena.get_viewport_rect().size)
+				arena.update_joystick(center + Vector2.RIGHT * arena.JOYSTICK_RADIUS * 0.13, arena.get_viewport_rect().size)
+				if elapsed > 0.85 and absf(angle_difference(arena.player.heading, 0.0)) < 0.3:
+					tiny_direction_observed = true
+			else:
+				arena.joystick_vector = Vector2.from_angle(elapsed * -1.0)
 			arena.mouse_boost = elapsed < 3.0
 			if arena.player.position.distance_to(previous_position) > 40:
 				observed_movement = true
@@ -110,6 +120,7 @@ func _process(delta: float) -> bool:
 			check(arena.received_snapshots >= 20,"client receives ongoing authoritative snapshots")
 			check(arena.sent_inputs >= 30,"client sends steering inputs")
 			check(observed_movement,"remote steering produces visible synchronized motion")
+			check(tiny_direction_observed,"tiny active joystick direction reaches host without a second deadzone")
 			check(arena.player.skin == 6 and arena.player.nickname == "Remote pilot","server preserves selected skin and nickname")
 			check(arena.player.score >= 9 and arena.player.cooldown > 0,"food growth and ability cooldown synchronize from host")
 			check(arena.foods.size() >= 400,"real initial food data synchronized")

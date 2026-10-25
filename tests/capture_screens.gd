@@ -4,6 +4,13 @@ extends SceneTree
 var app: Control
 var captures := 0
 
+func touch(index: int, at: Vector2, down: bool) -> void:
+	var event := InputEventScreenTouch.new()
+	event.index = index
+	event.position = root.get_final_transform() * at
+	event.pressed = down
+	Input.parse_input_event(event)
+
 func _initialize() -> void:
 	call_deferred("capture")
 
@@ -32,9 +39,13 @@ func capture() -> void:
 	root.mode=Window.MODE_WINDOWED
 	root.size=Vector2i(1280,720)
 	await process_frame
+	seed(913)
 	app=load("res://scenes/Main.tscn").instantiate()
 	root.add_child(app)
-	await create_timer(2.8).timeout
+	await create_timer(0.85).timeout
+	assert(app.current_page=="boot")
+	await snapshot("splash")
+	await create_timer(2.0).timeout
 	assert(app.current_page=="menu")
 	await snapshot("menu")
 	app.show_collection(true)
@@ -43,8 +54,18 @@ func capture() -> void:
 	await snapshot("collection")
 	app.show_menu()
 	app.start_game()
-	await create_timer(1.4).timeout
+	await create_timer(0.35).timeout
+	var arena_size: Vector2 = app.game.get_viewport_rect().size
+	var joystick: Vector2 = app.game.joystick_center(arena_size)
+	touch(0,joystick+Vector2(50,-20),true)
+	await create_timer(0.5).timeout
+	touch(0,joystick,false)
+	touch(2,app.game.skill_center(arena_size),true)
+	await process_frame
+	touch(2,app.game.skill_center(arena_size),false)
+	await create_timer(0.15).timeout
 	assert(app.game.player.alive)
+	assert(app.game.player.cooldown>0.0)
 	await snapshot("gameplay")
 	app.game.kill_snake(app.game.player,null)
 	await create_timer(1.3).timeout

@@ -21,6 +21,9 @@ import zipfile
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
+EXPECTED_VERSION = '1.2.0'
+EXPECTED_VERSION_CODE = 3
+VERSION_NOTES = 'android_v1_2_validation.md'
 
 
 def require(condition, message):
@@ -80,7 +83,7 @@ func verify(ok: bool, message: String) -> void:
   failures += 1
   push_error(message)
 func _initialize() -> void:
- verify(ProjectSettings.get_setting("application/config/version") == "1.1.0", "Packed game version")
+ verify(ProjectSettings.get_setting("application/config/version") == __EXPECTED_VERSION__, "Packed game version")
  verify(ProjectSettings.get_setting("application/boot_splash/show_image",true) == false, "Default Godot boot image disabled")
  verify(ProjectSettings.get_setting("display/window/stretch/aspect") == "expand", "Full viewport aspect expansion")
  verify(ProjectSettings.get_setting("rendering/renderer/rendering_method.mobile") == "gl_compatibility", "Mobile GL renderer")
@@ -131,13 +134,54 @@ func _initialize() -> void:
   var native = Image.load_from_file(path)
   var expected = original_icon.duplicate()
   expected.resize(native.get_width(),native.get_height(),Image.INTERPOLATE_LANCZOS)
+  expected.convert(Image.FORMAT_RGBA8)
+  native.convert(Image.FORMAT_RGBA8)
   verify(expected.get_data() == native.get_data(), "Native adaptive foreground is custom app artwork")
+ var latin_text := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+ for font_name in ["Body","Display"]:
+  var packed_font = load("res://assets/fonts/%s.ttf" % font_name)
+  verify(packed_font is Font, "Packed font load " + font_name)
+  var english_supported := packed_font is Font
+  if packed_font is Font:
+   for index in range(latin_text.length()):
+    english_supported = english_supported and packed_font.has_char(latin_text.unicode_at(index))
+  verify(english_supported, "Packed font English glyph coverage " + font_name)
+ var branding_details := {}
+ for entry in __BRANDING_SOURCES__:
+  var packed_texture = load(entry.resource)
+  var actual = packed_texture.get_image() if packed_texture is Texture2D else null
+  var expected = Image.load_from_file(entry.source)
+  verify(actual is Image and not expected.is_empty(), "Packed branding image decode " + entry.label)
+  if actual == null or expected.is_empty():
+   continue
+  verify(actual.get_size() == expected.get_size(), "Packed branding source dimensions " + entry.label)
+  actual.convert(Image.FORMAT_RGBA8)
+  expected.convert(Image.FORMAT_RGBA8)
+  expected.fix_alpha_edges()
+  verify(actual.get_data() == expected.get_data(), "Packed branding pixels equal current source after importer alpha fix " + entry.label)
+  var digest = HashingContext.new()
+  digest.start(HashingContext.HASH_SHA256)
+  digest.update(actual.get_data())
+  branding_details[entry.label] = {"width":actual.get_width(),"height":actual.get_height(),"pixel_sha256":digest.finish().hex_encode()}
  app.free()
+ print("PACKAGED_BRANDING=",JSON.stringify(branding_details))
  print("PACKAGED_GAME_RESOURCE_CHECKS=",checks," FAILURES=",failures)
  print("PACKAGED_MUSIC=",JSON.stringify(audio_details))
  print("PACKAGED_ENGINE_BOOT_IMAGE=false; ASPECT=expand; NATIVE_CUSTOM_ICON_DENSITIES=",native_paths.size())
  quit(1 if failures else 0)
 '''
+        branding_sources = [
+            {'label':'logo','resource':'res://assets/branding/warserpent.png','source':str(ROOT/'assets/branding/warserpent.png')},
+            {'label':'icon','resource':'res://assets/branding/icon.png','source':str(ROOT/'assets/branding/icon.png')},
+            {'label':'studio','resource':'res://assets/branding/emnio_games.png','source':str(ROOT/'assets/branding/emnio_games.png')},
+            {'label':'arena_floor','resource':'res://assets/arenas/neon_city.png','source':str(ROOT/'assets/arenas/neon_city.png')},
+        ]
+        for skin in range(8):
+            for part in ['head','body','tail']:
+                path = 'assets/snakes/'+part+'_'+str(skin)+'.png'
+                branding_sources.append({'label':'skin_'+str(skin)+'_'+part,'resource':'res://'+path,'source':str(ROOT/path)})
+        gdscript = gdscript.replace('__BRANDING_SOURCES__', json.dumps(branding_sources))
+        gdscript = gdscript.replace('__EXPECTED_VERSION__', json.dumps(EXPECTED_VERSION))
         gdscript = gdscript.replace('__SOURCE_ICON__', json.dumps(str(ROOT/'assets/branding/icon.png')))
         gdscript = gdscript.replace('__NATIVE_ICONS__', json.dumps(icons))
         script.write_text(gdscript)
@@ -148,7 +192,12 @@ func _initialize() -> void:
         output = command([godot, '--headless', '--path', bundle, '--script', script], env=env)
         require('SCRIPT ERROR:' not in output and 'ERROR:' not in output, 'Packed resource runner reported errors')
         require('FAILURES=0' in output, 'Packed resource assertions failed')
-    return argv
+        check_match = re.search(r'PACKAGED_GAME_RESOURCE_CHECKS=(\d+) FAILURES=0',output)
+        require(check_match is not None, 'Resource check count missing')
+        branding_match = re.search(r'PACKAGED_BRANDING=(.+)',output)
+        require(branding_match is not None, 'Branding pixel evidence missing')
+        report = {'checks':int(check_match.group(1)),'branding':json.loads(branding_match.group(1))}
+    return argv, report
 
 
 def main():
@@ -177,7 +226,7 @@ def main():
     require(cert_match.group(1) == os.environ.get('WARSERPENT_EXPECTED_CERT_SHA256','5764b2c60e35c535276fccf3e112de4f5d5f991c6512f8b584624743d61db620'), 'Signing key differs from installed v1.0.0; update would fail')
     badging = command([sdk/'aapt', 'dump', 'badging', apk])
     require("name='com.emnioggs.warserpent'" in badging, 'Wrong APK package')
-    require("versionCode='2'" in badging and "versionName='1.1.0'" in badging, 'Wrong APK version')
+    require(f"versionCode='{EXPECTED_VERSION_CODE}'" in badging and f"versionName='{EXPECTED_VERSION}'" in badging, 'Wrong APK version')
     require("sdkVersion:'24'" in badging and "targetSdkVersion:'36'" in badging, 'Unexpected API levels')
     require("native-code: 'arm64-v8a' 'armeabi-v7a'" in badging, 'Missing native ABIs')
     require('application-debuggable' not in badging, 'Optimized build must not be debuggable')
@@ -201,7 +250,8 @@ def main():
         require(len(set(authorities.values())) == len(authorities), 'Duplicate provider authorities')
         require(module.correct(xml) == xml, 'Manifest correction not idempotent')
         names = z.namelist()
-        for resource in ['assets/scripts/ui/Main.gdc', 'assets/scripts/gameplay/ArenaGame.gdc',
+        for resource in ['assets/scripts/ui/Main.gdc', 'assets/scripts/ui/MenuAtmosphere.gdc', 'assets/scripts/ui/LobbyPlatform.gdc',
+                         'assets/scripts/ui/SerpentPreview.gdc', 'assets/scripts/gameplay/ArenaGame.gdc',
                          'assets/scripts/core/Profile.gdc', 'assets/scripts/movement/snake_model.gdc',
                          'assets/scripts/bots/arena_brain.gdc', 'assets/scripts/gameplay/spatial_hash.gdc',
                          'classes.dex', 'resources.arsc']:
@@ -213,7 +263,7 @@ def main():
         for track in ['music_menu', 'music_arena']:
             require(any(track in n for n in names), 'Missing background music: '+track)
         require('assets/scripts/network/OnlineArena.gdc' in names, 'Real multiplayer code missing')
-        packed_argv = inspect_packaged_game(z,args.godot,command,evidence)
+        packed_argv, packaged_report = inspect_packaged_game(z,args.godot,command,evidence)
         native = []
         require(args.release_template.is_file(), 'Verified release template missing')
         with zipfile.ZipFile(args.release_template) as reference, tempfile.TemporaryDirectory(prefix='warserpent-elf-') as tmp:
@@ -249,13 +299,19 @@ Independent validation: python3 tools/validate_android.py
 Full final build log: builds/android-build.log
 Full validation output: docs/apk_validation_details.txt
 Outcome: exit0; APK exported, narrowly manifest-corrected, aligned, re-signed,
-and independently validated after v1.1 performance/UI/audio/multiplayer changes; same signing certificate as v1.0.
+and independently validated after v1.2 branding/UI/gameplay-polish changes; same signing certificate as prior versions.
 Source Main.gd SHA256: {hashlib.sha256((ROOT/'scripts/ui/Main.gd').read_bytes()).hexdigest()}
 Source ArenaGame.gd SHA256: {hashlib.sha256((ROOT/'scripts/gameplay/ArenaGame.gd').read_bytes()).hexdigest()}
 Source OnlineArena.gd SHA256: {hashlib.sha256((ROOT/'scripts/network/OnlineArena.gd').read_bytes()).hexdigest()}
+Source MenuAtmosphere.gd SHA256: {hashlib.sha256((ROOT/'scripts/ui/MenuAtmosphere.gd').read_bytes()).hexdigest()}
+Source LobbyPlatform.gd SHA256: {hashlib.sha256((ROOT/'scripts/ui/LobbyPlatform.gd').read_bytes()).hexdigest()}
+Source SerpentPreview.gd SHA256: {hashlib.sha256((ROOT/'scripts/ui/SerpentPreview.gd').read_bytes()).hexdigest()}
+Source logo PNG SHA256: {hashlib.sha256((ROOT/'assets/branding/warserpent.png').read_bytes()).hexdigest()}
+Source icon PNG SHA256: {hashlib.sha256((ROOT/'assets/branding/icon.png').read_bytes()).hexdigest()}
+Source Emnio Games PNG SHA256: {hashlib.sha256((ROOT/'assets/branding/emnio_games.png').read_bytes()).hexdigest()}
 
 Manifest (aapt badging+xmltree, exit0):
-- package com.emnioggs.warserpent; label War Serpent.io; v1.1.0/code2.
+- package com.emnioggs.warserpent; label War Serpent.io; v{EXPECTED_VERSION}/code{EXPECTED_VERSION_CODE}.
 - min API24, target/compile API36, landscape0, release-template build (debuggable=false).
 - same development signing identity as v1.0; filename retained for download compatibility.
 - OpenGL ES3, GL Compatibility renderer; INTERNET permission for real direct multiplayer; no camera/microphone/storage permissions.
@@ -275,10 +331,18 @@ Executable/resources:
 - four native libraries for ARM64 and ARMv7 present with actual ELF headers;
   every payload SHA256 matches the verified official RELEASE template byte-for-byte.
 - compiled Main.scn, Main.gdc, ArenaGame.gdc, Profile.gdc, snake_model.gdc,
-  arena_brain.gdc and spatial_hash.gdc packaged.
+  arena_brain.gdc, spatial_hash.gdc, MenuAtmosphere.gdc, LobbyPlatform.gdc and SerpentPreview.gdc packaged.
 - data/catalog.json parsed and exactly matches source JSON; eight skins.
 - {assets} packaged Godot asset resources, including {imports} imported assets.
 - snake/UI/branding texture and audio resources included.
+- {packaged_report['checks']} actual packaged-resource assertions passed.
+- packed War Serpent logo, app icon, Emnio Games studio logo, purple arena floor
+  and all24 head/body/tail sprite files reconstructed to RGBA8 match current
+  source pixels exactly after importer alpha-edge fix; detects stale art.
+- decoded logo: {packaged_report['branding']['logo']};
+  decoded icon: {packaged_report['branding']['icon']};
+  decoded Emnio Games: {packaged_report['branding']['studio']}.
+- both packed fonts load and cover English upper/lowercase letters and digits.
 - actual packed project.binary: boot_splash/show_image=false, viewport aspect=expand.
 - actual Android runtime arguments include --fullscreen and --edge_to_edge.
 - all six native adaptive foreground densities exactly match the original custom icon
@@ -309,7 +373,7 @@ Device tests:
     (ROOT/'builds/AndroidManifest.xmltree.txt').write_text(manifest)
     (ROOT/'docs/apk_validation.txt').write_text(summary)
     (ROOT/'docs/apk_validation_details.txt').write_text('\n'.join(evidence))
-    notes_path = ROOT/'docs/android_v1_1_validation.md'
+    notes_path = ROOT/'docs'/VERSION_NOTES
     if notes_path.is_file():
         notes = notes_path.read_text()
         notes = re.sub(r'^\| APK bytes \|.*$', lambda _: '| APK bytes | `'+str(apk.stat().st_size)+'` ('+format(apk.stat().st_size/1024/1024,'.2f')+'MiB) |', notes, flags=re.M)

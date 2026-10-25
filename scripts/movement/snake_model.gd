@@ -5,7 +5,8 @@ class_name SnakeModel
 ## or per-frame history copying; sampling remains independent of FPS and speed.
 const SPACING := 10.0
 const BASE_SPEED := 162.0
-const TURN_RATE := 3.8
+const TURN_RATE := 4.8
+const LARGE_TURN_RATE := 3.8
 const START_MASS := 36.0
 const MIN_MASS := 12.0
 const HISTORY_CAPACITY := 640
@@ -101,7 +102,9 @@ func advance(delta: float, target_angle: float, request_boost: bool) -> void:
 		slow_factor = 1.0
 	if active_time <= 0.0:
 		shield = false
-	var turn := clampf(angle_difference(heading, target_angle), -TURN_RATE * delta, TURN_RATE * delta)
+	# Compact snakes respond quickly; large bodies keep a readable turning radius.
+	var turn_rate := lerpf(TURN_RATE, LARGE_TURN_RATE, clampf((mass - START_MASS) / 1200.0, 0.0, 1.0))
+	var turn := clampf(angle_difference(heading, target_angle), -turn_rate * delta, turn_rate * delta)
 	heading += turn
 	boosting = request_boost and mass > MIN_MASS
 	var speed := BASE_SPEED * slow_factor
