@@ -1,16 +1,17 @@
-# War Serpent.io 1.1.0 — Emnio
+# War Serpent.io 1.2.0 — Emnio Games
 
-Updated optimized Android APK. Package com.emnioggs.warserpent, version code2, Android7/API24+, ARM64/ARMv7/GLES3.
+Native optimized Android update. Package com.emnioggs.warserpent, version code3, Android7/API24+, ARM64/ARMv7, OpenGL ES3.
 
-Install over v1.0.0 to preserve data; the signing certificate is unchanged. Do not uninstall first.
+Install over the previous version without uninstalling to retain progress; the signing certificate is unchanged.
 
-- Smaller starting snake, batched rendering, spatial AI and conservative mobile settings.
-- English animated UI, custom Emnio opening, no loading slogans, full-bleed landscape and clear ELIMINATED results.
-- Eight skins with real abilities, two synthwave background tracks and more effects.
-- Real direct-connect ENet rooms, host+3guests; sameWiFi or reachableUDP host, not public automatic matchmaking. Host screen shows LAN address/port.
-- Savev2 migrates old progress.
+- Game-style lobby: top profile/currencies, left navigation, a large expressive serpent on a neon podium, collection rail, and gold START button at bottom right.
+- Real circular minimap, compact time/score/leaderboard and real power controls; purple raised-block arena.
+- Eight glossy expressive serpent designs, a new War Serpent.io logo/icon and original Emnio Games studio mark.
+- Responsive controls, joystick hysteresis and safe control reset, protection/power/boundary feedback.
+- Offline AI plus real direct host/join rooms, background music, economy and persistent saves remain functional.
 
-268 gameplay/profile/flow/network checks passed;58actualAPK resource checks passed. Server benchmarks measured~54% lower simulation CPU and~80% lower draw-command CPU at comparable load, not Android FPS. No connected Android device/emulator was available for installation, hardware controls or FPS profiling.
+345 logic/flow/network checks passed;146checks of the actual APK payload passed. Five real framebuffers included in source docs. No Android hardware/emulator was connected: installation and actual phone FPS/Wi-Fi still need device validation.
 
-Release-mode engine signed with the existing development identity; not a Play Store production signing identity.
-Source, licenses and detailed BUILD_REPORT are included in the ZIP and main branch.
+The expanded HUD costs more draw work than the previous minimal HUD; instanced rendering remains. Detailed measurements and limitations are in BUILD_REPORT.md and docs/GAMEPLAY_V1_2.md.
+
+Release-mode engine, same development signing identity as previous releases; not a Play Store production signing identity. MIT code; original artwork/audio and other notices included in source ZIP.
