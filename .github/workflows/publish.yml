@@ -16,8 +16,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if gh release view v1.0.0 >/dev/null 2>&1; then
-            echo 'Release already exists; preserving its existing contents.'
+          if gh release view v1.1.0 >/dev/null 2>&1; then
+            echo 'Release already exists; preserving existing contents.'
             exit 1
           fi
-          gh release create v1.0.0 WarSerpentIO-debug.apk WarSerpentIO-Source.zip SHA256SUMS --target main --title "War Serpent.io 1.0.0 — Emnio" --notes-file README.md
+          gh release create v1.1.0 WarSerpentIO-v1.1.0.apk WarSerpentIO-Source-v1.1.0.zip SHA256SUMS --target main --title "War Serpent.io 1.1.0 — performance, audio and multiplayer" --notes-file README.md
