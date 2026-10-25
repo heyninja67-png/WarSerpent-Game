@@ -21,14 +21,40 @@ import zipfile
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = '1.2.0'
-EXPECTED_VERSION_CODE = 3
-VERSION_NOTES = 'android_v1_2_validation.md'
+EXPECTED_VERSION = '1.2.1'
+EXPECTED_VERSION_CODE = 4
+VERSION_NOTES = 'android_v1_2_1_validation.md'
+CLASSIC_REFERENCE_COMMIT = 'e31130e13de1bd6b8ebee193da3f64602aa14b5d'
+CLASSIC_HASH_MAP_SHA256 = '42b8818e9679c97343691727e9cb971c948f3561bf07803b6fe512a7a4e03a18'
 
 
 def require(condition, message):
     if not condition:
         raise RuntimeError(message)
+
+
+def verify_classic_sources(evidence):
+    """Verify canonical PNG bytes without requiring Git in a source ZIP.
+
+    The pinned hash-map digest was independently derived from git show of the
+    full reference commit. The source-distributed restoration proof supplies
+    all24 canonical per-file SHA256 values; imported APK pixels are checked
+    separately against these byte-verified sources by the Godot resource probe.
+    """
+    proof_path = ROOT/'assets/snakes/RESTORE_PROOF.json'
+    proof = json.loads(proof_path.read_text())
+    require(proof.get('reference_commit') == CLASSIC_REFERENCE_COMMIT, 'Wrong classic snake reference commit')
+    digests = proof.get('sha256', {})
+    expected_paths = {'assets/snakes/'+part+'_'+str(skin)+'.png' for skin in range(8) for part in ['head','body','tail']}
+    require(set(digests) == expected_paths, 'Classic restoration must cover all24 PNG files')
+    canonical = json.dumps(digests, sort_keys=True, separators=(',',':')).encode()
+    require(hashlib.sha256(canonical).hexdigest() == CLASSIC_HASH_MAP_SHA256, 'Classic source hash manifest differs from independently pinned reference')
+    for path, expected in sorted(digests.items()):
+        actual = hashlib.sha256((ROOT/path).read_bytes()).hexdigest()
+        require(actual == expected, 'Classic snake source differs from reference: '+path)
+        evidence.append('Classic reference PNG SHA256 verified '+actual+' '+path+'\n')
+    evidence.append('All24 classic PNG files byte-exact to reference '+CLASSIC_REFERENCE_COMMIT+'; canonical manifest SHA256 '+CLASSIC_HASH_MAP_SHA256+'\n')
+    return proof_path
 
 
 def inspect_packaged_game(z, godot, command, evidence):
@@ -211,6 +237,7 @@ def main():
     apk = args.apk.resolve()
     sdk = args.sdk/'build-tools'/args.build_tools
     evidence = []
+    classic_proof_path = verify_classic_sources(evidence)
 
     def command(argv, env=None):
         result = subprocess.run(list(map(str, argv)), capture_output=True, text=True, env=env, timeout=90)
@@ -256,6 +283,7 @@ def main():
                          'assets/scripts/bots/arena_brain.gdc', 'assets/scripts/gameplay/spatial_hash.gdc',
                          'classes.dex', 'resources.arsc']:
             require(z.getinfo(resource).file_size > 0, 'Missing executable/resource: ' + resource)
+        require(z.read('assets/assets/snakes/RESTORE_PROOF.json') == classic_proof_path.read_bytes(), 'Classic restoration proof missing or changed inside APK')
         require(json.loads(z.read('assets/data/catalog.json')) == json.loads((ROOT/'data/catalog.json').read_text()), 'Catalog differs from source')
         require(z.read('assets/assets/fonts/LICENSE-DejaVu.txt') == (ROOT/'assets/fonts/LICENSE-DejaVu.txt').read_bytes(), 'Font notice missing or differs from source')
         require(any(n.endswith('Main.scn') for n in names), 'Compiled main scene missing')
@@ -299,7 +327,7 @@ Independent validation: python3 tools/validate_android.py
 Full final build log: builds/android-build.log
 Full validation output: docs/apk_validation_details.txt
 Outcome: exit0; APK exported, narrowly manifest-corrected, aligned, re-signed,
-and independently validated after v1.2 branding/UI/gameplay-polish changes; same signing certificate as prior versions.
+and independently validated after v1.2.1 classic-snake restoration/UI fixes and animation changes; same signing certificate as prior versions.
 Source Main.gd SHA256: {hashlib.sha256((ROOT/'scripts/ui/Main.gd').read_bytes()).hexdigest()}
 Source ArenaGame.gd SHA256: {hashlib.sha256((ROOT/'scripts/gameplay/ArenaGame.gd').read_bytes()).hexdigest()}
 Source OnlineArena.gd SHA256: {hashlib.sha256((ROOT/'scripts/network/OnlineArena.gd').read_bytes()).hexdigest()}
@@ -336,8 +364,10 @@ Executable/resources:
 - {assets} packaged Godot asset resources, including {imports} imported assets.
 - snake/UI/branding texture and audio resources included.
 - {packaged_report['checks']} actual packaged-resource assertions passed.
+- all24 classic PNG source files are byte-exact to commit {CLASSIC_REFERENCE_COMMIT};
+  canonical SHA256 hash-map pin: {CLASSIC_HASH_MAP_SHA256}.
 - packed War Serpent logo, app icon, Emnio Games studio logo, purple arena floor
-  and all24 head/body/tail sprite files reconstructed to RGBA8 match current
+  and all24 restored classic head/body/tail sprite files reconstructed to RGBA8 match current
   source pixels exactly after importer alpha-edge fix; detects stale art.
 - decoded logo: {packaged_report['branding']['logo']};
   decoded icon: {packaged_report['branding']['icon']};

@@ -423,10 +423,10 @@ func draw_hud(size: Vector2) -> void:
 		centered(size * 0.5, "CONNECTING TO ROOM…", 28, Color("8feaff"))
 	else:
 		if room_mode == "host":
-			text(Vector2(22, 187), host_connection_hint, 13, Color("6df0be"))
-			text(Vector2(22, 207), "HOST · %d/4 PLAYERS" % (guest_slots.size() + 1), 11, Color("92b9c9"))
+			text(Vector2(22, 198), host_connection_hint, 13, Color("6df0be"))
+			text(Vector2(22, 220), "HOST · %d/4 PLAYERS" % (guest_slots.size() + 1), 11, Color("92b9c9"))
 		else:
-			text(Vector2(22, 187), "ONLINE · CONNECTED", 13, Color("6df0be"))
+			text(Vector2(22, 198), "ONLINE · CONNECTED", 13, Color("6df0be"))
 
 func _exit_tree() -> void:
 	if peer != null:

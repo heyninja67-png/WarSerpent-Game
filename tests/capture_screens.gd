@@ -68,8 +68,11 @@ func capture() -> void:
 	assert(app.game.player.cooldown>0.0)
 	await snapshot("gameplay")
 	app.game.kill_snake(app.game.player,null)
-	await create_timer(1.3).timeout
+	await create_timer(2.0).timeout
 	assert(app.current_page=="results")
+	for counter_name in ["AnimatedFinalScore","AnimatedCoins","AnimatedXP"]:
+		var counter: Label = app.screen.find_child(counter_name,true,false)
+		assert(counter != null and counter.get_meta("displayed_value") == counter.get_meta("target_value"),"Capture settled real result values")
 	await snapshot("results")
 	app.queue_free()
 	await process_frame

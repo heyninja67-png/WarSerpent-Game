@@ -43,6 +43,13 @@ var backdrop_shift := Vector2.ZERO
 var page_animation_direction := 0
 var atmosphere: Control
 var selected_title: Label
+var selected_subtitle: Label
+var podium: Control
+var collection_cells: Dictionary = {}
+var purchase_dialog: ConfirmationDialog
+var ui_anim_tick := 0.0
+var backdrop_origin := Vector2.ZERO
+var navigation_generation := 0
 
 func _ready() -> void:
 	profile.load_profile()
@@ -68,6 +75,7 @@ func _ready() -> void:
 	music.finished.connect(func(): music.play())
 	add_child(music)
 	apply_settings()
+	get_viewport().size_changed.connect(relayout_screen)
 	show_boot()
 
 func box(color: Color, edge: Color = Color("25445a"), radius: int = 16) -> StyleBoxFlat:
@@ -96,18 +104,38 @@ func label_at(parent: Node, text_value: String, rect: Rect2, px: int = 20, color
 	label.add_theme_font_size_override("font_size", px)
 	place(label, parent, rect)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.set_meta("base_font_size",px)
+	if text_value.trim_prefix("+").is_valid_int():
+		fit_label_text(label,px)
 	return label
 
 func title(parent: Node, text_value: String, rect: Rect2, px: int = 32) -> Label:
 	var label := label_at(parent, text_value, rect, px)
 	label.add_theme_font_override("font", font_display)
+	fit_label_text(label,px)
 	return label
+
+func fit_label_text(label: Label, preferred_size: int) -> void:
+	var font:=label.get_theme_font("font")
+	var maximum:=maxf(1.0,label.size.x-2.0)
+	var chosen:=preferred_size
+	while chosen>12:
+		var widest:=0.0
+		for row in label.text.split("\n"):
+			widest=maxf(widest,font.get_string_size(row,HORIZONTAL_ALIGNMENT_LEFT,-1,chosen).x)
+		if widest<=maximum:
+			break
+		chosen-=1
+	label.add_theme_font_size_override("font_size",chosen)
 
 func button_art(asset_name: String) -> StyleBoxTexture:
 	var artwork := StyleBoxTexture.new()
 	artwork.texture = load("res://assets/ui/%s.png" % asset_name)
 	for side in [SIDE_LEFT,SIDE_TOP,SIDE_RIGHT,SIDE_BOTTOM]:
 		artwork.set_texture_margin(side,16)
+	# Visual borders remain sixteen pixels; compact content avoids inflated min-heights.
+	artwork.content_margin_top=4
+	artwork.content_margin_bottom=4
 	return artwork
 
 func game_button_style(asset: String, primary: bool) -> StyleBox:
@@ -117,6 +145,8 @@ func game_button_style(asset: String, primary: bool) -> StyleBox:
 	return box(Color("ffd259") if primary else Color(.035,.055,.08,.8),Color("ffda76") if primary else Color("3b5163"),2)
 
 func animate_button(b: Button, target: Vector2) -> void:
+	if not is_instance_valid(b) or not b.is_inside_tree() or b.is_queued_for_deletion() or not b.is_visible_in_tree():
+		return
 	var old: Tween=b.get_meta("feedback_tween") if b.has_meta("feedback_tween") else null
 	if old != null and old.is_valid():
 		old.kill()
@@ -127,6 +157,9 @@ func animate_button(b: Button, target: Vector2) -> void:
 func button(parent: Node, caption: String, rect: Rect2, action: Callable, primary: bool = false) -> Button:
 	var b := Button.new()
 	b.text=caption
+	b.clip_text=true
+	b.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
+	b.tooltip_text=caption
 	b.add_theme_stylebox_override("normal",game_button_style("button_start" if primary else "button_alt",primary))
 	b.add_theme_stylebox_override("hover",game_button_style("button_start_hover" if primary else "button_hover",primary))
 	b.add_theme_stylebox_override("pressed",game_button_style("button_start_pressed" if primary else "button_pressed",primary))
@@ -177,10 +210,96 @@ func picture(parent: Node, path: String, rect: Rect2) -> TextureRect:
 	place(pic, parent, rect)
 	return pic
 
+func disable_retired_input(node: Node) -> void:
+	if node is Control:
+		node.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		if node.has_focus():
+			node.release_focus()
+		if node is BaseButton:
+			node.disabled=true
+	for child in node.get_children():
+		disable_retired_input(child)
+
+func retire_node(node: Node) -> void:
+	if not is_instance_valid(node) or node.is_queued_for_deletion():
+		return
+	# GUI dispatch still consults its original pressed control after the callback.
+	# Retire synchronously, but leave the node in the tree until queued deletion.
+	node.set_meta("retired",true)
+	node.name="Retired_%d"%node.get_instance_id()
+	node.process_mode=Node.PROCESS_MODE_DISABLED
+	if node is CanvasItem or node is Window:
+		node.hide()
+	disable_retired_input(node)
+	node.queue_free()
+
+func close_purchase_dialog() -> void:
+	if is_instance_valid(purchase_dialog):
+		retire_node(purchase_dialog)
+	purchase_dialog=null
+
+func dispose_overlay() -> void:
+	if is_instance_valid(overlay):
+		retire_node(overlay)
+	overlay=null
+
+func relayout_screen() -> void:
+	if not is_instance_valid(screen) or screen.is_queued_for_deletion():
+		return
+	var safe:=content_rect()
+	var factor:=minf(1.0,minf(safe.size.x/1280.0,safe.size.y/720.0))
+	screen.scale=Vector2.ONE*maxf(factor,.01)
+	screen.position=safe.position+(safe.size-screen.size*factor)*.5
+	backdrop_shift=screen.position
+	var full:=Rect2(-screen.position/screen.scale,get_viewport_rect().size/screen.scale)
+	if is_instance_valid(background):
+		background.position=full.position-Vector2.ONE*10.0
+		background.size=full.size+Vector2.ONE*20.0
+		backdrop_origin=background.position
+	for child in screen.get_children():
+		if child is Control and child.has_meta("full_bleed"):
+			child.position=full.position
+			child.size=full.size
+		elif child is Control and child.has_meta("header_strip"):
+			child.position=Vector2(full.position.x,0)
+			child.size=Vector2(full.size.x,73)
+	if is_instance_valid(overlay):
+		for child in overlay.get_children():
+			if child is Control and child.has_meta("full_bleed"):
+				child.position=full.position
+				child.size=full.size
+	if is_instance_valid(purchase_dialog) and purchase_dialog.visible:
+		purchase_dialog.popup_centered(Vector2i(550,220))
+
+func reveal_control(node: Control, delay: float, duration: float=.28) -> void:
+	# Alpha-only entrance preserves hitboxes and keeps every important control in bounds.
+	node.modulate.a=0.0
+	var reveal:=node.create_tween()
+	node.set_meta("entrance_tween",reveal)
+	reveal.tween_interval(delay)
+	reveal.tween_property(node,"modulate:a",1.0,duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+func count_label(label: Label, target: int, duration: float, prefix: String="") -> void:
+	label.set_meta("target_value",target)
+	label.set_meta("displayed_value",0)
+	label.text=prefix+"0"
+	var count:=label.create_tween()
+	# Bind to a weak reference: screen replacement cancels the node-bound tween safely.
+	count.tween_method(update_count_label.bind(weakref(label),prefix),0.0,float(target),duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+func update_count_label(value: float, reference: WeakRef, prefix: String) -> void:
+	var label: Label=reference.get_ref()
+	if label!=null:
+		label.set_meta("displayed_value",roundi(value))
+		label.text=prefix+str(roundi(value))
+		fit_label_text(label,int(label.get_meta("base_font_size")))
+
 func clear_screen() -> void:
+	navigation_generation+=1
+	close_purchase_dialog()
+	dispose_overlay()
 	if is_instance_valid(screen):
-		remove_child(screen)
-		screen.queue_free()
+		retire_node(screen)
 	screen = Control.new()
 	add_child(screen)
 	screen.size=Vector2(1280,720)
@@ -197,6 +316,9 @@ func clear_screen() -> void:
 	shade.color = Color(0.012,0.024,0.05,0.73)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	place(shade, screen, Rect2(-screen.position/screen.scale,get_viewport_rect().size/screen.scale))
+	shade.name="BaseShade"
+	shade.set_meta("full_bleed",true)
+	relayout_screen()
 	screen.modulate.a = 0.0
 	screen.create_tween().tween_property(screen,"modulate:a",1.0,0.22)
 
@@ -243,9 +365,14 @@ func show_boot() -> void:
 	ResourceLoader.load_threaded_request(boot_paths[0])
 
 func _process(delta: float) -> void:
-	menu_clock += delta
-	if current_page == "menu" and is_instance_valid(menu_logo) and not is_instance_valid(overlay):
-		menu_logo.position.y = 82.0 + sin(menu_clock*.9)*2.0
+	menu_clock+=delta
+	ui_anim_tick+=delta
+	if ui_anim_tick>=1.0/24.0:
+		ui_anim_tick=0.0
+		if current_page=="menu" and is_instance_valid(menu_logo) and not is_instance_valid(overlay):
+			menu_logo.position.y=82.0+sin(menu_clock*.9)*3.0
+			if is_instance_valid(background):
+				background.position=backdrop_origin+Vector2(sin(menu_clock*.19)*5.0,cos(menu_clock*.17)*3.0)
 	if not boot_active:
 		return
 	boot_elapsed += delta
@@ -277,10 +404,12 @@ func show_menu() -> void:
 	set_music_track("menu")
 	atmosphere=AtmosphereScript.new()
 	atmosphere.name="Atmosphere"
+	atmosphere.set_meta("full_bleed",true)
 	place(atmosphere,screen,Rect2(-screen.position/screen.scale,get_viewport_rect().size/screen.scale))
 	# Compact original studio lobby header: identity, real balances, settings.
 	var header:=ColorRect.new()
 	header.color=Color(.02,.035,.055,.89)
+	header.set_meta("header_strip",true)
 	header.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	place(header,screen,Rect2(-screen.position.x/screen.scale.x,0,get_viewport_rect().size.x/screen.scale.x,73))
 	button(screen,"%s  /  LV. %d"%[profile.data.name,profile.data.level],Rect2(28,14,278,46),show_profile)
@@ -315,7 +444,7 @@ func show_menu() -> void:
 			nav.add_theme_constant_override("h_separation",13)
 	# Animated upright serpent as the lobby character, on its own energy podium.
 	var active:Dictionary=profile.catalog[int(profile.data.equipped)]
-	var podium:=PlatformScript.new()
+	podium=PlatformScript.new()
 	podium.accent=Color(active.color)
 	place(podium,screen,Rect2(289,494,610,146))
 	preview=PreviewScript.new()
@@ -325,21 +454,24 @@ func show_menu() -> void:
 	place(preview,screen,Rect2(252,138,660,440))
 	selected_title=title(screen,str(active.name).to_upper(),Rect2(292,589,600,39),27)
 	selected_title.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-	label_at(screen,str(active.ability)+"   /   "+str(active.rarity).to_upper(),Rect2(344,630,505,22),12,Color(active.color)).horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	selected_subtitle=label_at(screen,str(active.ability)+"   /   "+str(active.rarity).to_upper(),Rect2(344,630,505,22),12,Color(active.color))
+	selected_subtitle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	# Collection rail uses actual inventory. Every slot equips or opens its real page.
 	label_at(screen,"COLLECTION",Rect2(1084,105,160,25),12,Color("ffd259"))
+	collection_cells.clear()
 	for i in range(profile.catalog.size()):
 		var skin:Dictionary=profile.catalog[i]
 		var id:=int(skin.id)
 		var owned:bool=profile.data.owned.has(id)
 		var cell:=button(screen,"",Rect2(1113+(i%2)*67,145+(i/2)*66,57,57),func():
 			if owned:
-				profile.equip_skin(id)
-				show_menu()
+				select_skin(id)
 			else:
 				collection_page=id/4
 				show_collection(true))
 		cell.tooltip_text=str(skin.name)
+		cell.name="SkinSlot%d"%id
+		collection_cells[id]=cell
 		picture(cell,"res://assets/snakes/head_%d.png"%id,Rect2(4,4,49,49))
 		cell.modulate=Color.WHITE if owned else Color(.55,.62,.69,.8)
 		if id==int(profile.data.equipped):
@@ -361,8 +493,8 @@ func show_menu() -> void:
 	start.add_theme_font_override("font",font_display)
 	start.add_theme_font_size_override("font_size",31 if not online_mode else 23)
 	var pulse:=start.create_tween().set_loops()
-	pulse.tween_property(start,"modulate",Color("fff0b1"),1.4)
-	pulse.tween_property(start,"modulate",Color.WHITE,1.4)
+	pulse.tween_property(start,"self_modulate",Color("fff0b1"),1.4)
+	pulse.tween_property(start,"self_modulate",Color.WHITE,1.4)
 	# Cosmetic toolbar, every tab backed by a functioning collection/equip action.
 	line_accent(screen,Rect2(27,658,870,1),Color(.7,.6,.3,.3))
 	var serpents:=button(screen,"SERPENTS",Rect2(27,660,205,43),func():show_collection(false))
@@ -371,17 +503,59 @@ func show_menu() -> void:
 	serpents.add_theme_constant_override("icon_max_width",21)
 	button(screen,"CHANGE SERPENT",Rect2(249,660,257,43),func():show_collection(false))
 	label_at(screen,"%d / %d UNLOCKED"%[profile.data.owned.size(),profile.catalog.size()],Rect2(538,674,340,26),13,Color("d2bc7d"))
+	# A bounded entrance sequence; no positional motion of touch targets.
+	reveal_control(menu_logo,.01,.30)
+	reveal_control(preview,.09,.38)
+	reveal_control(podium,.02,.45)
+	var navigation_order:=0
+	for child in screen.get_children():
+		if child is Button and child.text in entries:
+			reveal_control(child,.04+float(navigation_order)*.035,.22)
+			navigation_order+=1
+	reveal_control(mode,.10,.30)
+	reveal_control(start,.17,.30)
+	relayout_screen()
+
+func select_skin(id: int) -> void:
+	if not profile.equip_skin(id):
+		play_sound("error")
+		return
+	var selected:Dictionary=profile.catalog[id]
+	if is_instance_valid(preview):
+		preview.transition_to_skin(id)
+	if is_instance_valid(selected_title):
+		selected_title.text=str(selected.name).to_upper()
+	if is_instance_valid(selected_subtitle):
+		selected_subtitle.text=str(selected.ability)+"   /   "+str(selected.rarity).to_upper()
+		selected_subtitle.modulate=Color(selected.color)
+	if is_instance_valid(podium):
+		podium.accent=Color(selected.color)
+	for key in collection_cells:
+		var cell:Button=collection_cells[key]
+		if not is_instance_valid(cell):
+			continue
+		cell.add_theme_stylebox_override("normal",box(Color("183744"),Color("ffce53"),2) if int(key)==id else game_button_style("button_alt",false))
+	play_sound("start")
 
 func open_page(caption: String, subtitle: String = "") -> Control:
-	if is_instance_valid(overlay):
-		overlay.queue_free()
-	overlay = Control.new()
+	navigation_generation+=1
+	close_purchase_dialog()
+	dispose_overlay()
+	# Hidden lobby controls stop rendering/preview work and cannot receive pointer input.
+	for child in screen.get_children():
+		if child is Control and child!=background and child.name!="BaseShade":
+			child.hide()
+	overlay=Control.new()
+	overlay.name="PageOverlay"
+	overlay.mouse_filter=Control.MOUSE_FILTER_STOP
 	place(overlay,screen,Rect2(0,0,1280,720))
 	var dim := ColorRect.new()
-	dim.color = Color(0.01,0.02,0.05,0.95)
+	dim.color=Color(.012,.022,.04,1.0)
+	dim.mouse_filter=Control.MOUSE_FILTER_STOP
+	dim.set_meta("full_bleed",true)
 	place(dim,overlay,Rect2(-screen.position/screen.scale,get_viewport_rect().size/screen.scale))
 	line_accent(overlay,Rect2(42,24,42,3),Color("ffd259"))
-	title(overlay,caption,Rect2(42,32,1000,55),35)
+	title(overlay,caption,Rect2(42,32,720,55),35)
 	label_at(overlay,subtitle,Rect2(44,90,1100,36),16,MUTED)
 	button(overlay,"BACK",Rect2(1080,32,155,48),show_menu)
 	return overlay
@@ -429,6 +603,7 @@ func show_collection(shop: bool = false) -> void:
 		var owned:bool=profile.data.owned.has(id)
 		var tint:=Color(entry.color)
 		var card:=panel(cards,Rect2(x,0,282,452))
+		reveal_control(card,float(x/302)*.035,.24)
 		line_accent(card,Rect2(19,18,24,3),tint)
 		label_at(card,str(entry.rarity).to_upper(),Rect2(54,8,210,24),11,tint)
 		title(card,str(entry.name).replace(" ","\n"),Rect2(19,43,246,68),25)
@@ -452,13 +627,20 @@ func show_collection(shop: bool = false) -> void:
 
 func confirm_purchase(id: int, shop: bool) -> void:
 	var entry: Dictionary = profile.catalog[id]
-	var dialog := ConfirmationDialog.new()
+	close_purchase_dialog()
+	var dialog:=ConfirmationDialog.new()
+	purchase_dialog=dialog
+	var dialog_generation:=navigation_generation
 	dialog.title = "Unlock serpent"
 	dialog.dialog_text = "Unlock %s for %d coins?\nYour balance: %d" % [entry.name,entry.price,profile.data.coins]
 	dialog.ok_button_text = "UNLOCK"
 	dialog.cancel_button_text = "CANCEL"
 	add_child(dialog)
 	dialog.confirmed.connect(func():
+		if navigation_generation!=dialog_generation or purchase_dialog!=dialog:
+			dialog.queue_free()
+			return
+		purchase_dialog=null
 		var success: bool = profile.buy_skin(id)
 		show_collection(shop)
 		if success:
@@ -468,10 +650,12 @@ func confirm_purchase(id: int, shop: bool) -> void:
 			play_sound("error")
 			toast("Not enough coins. Earn more in the arena or complete missions.")
 		dialog.queue_free())
-	dialog.canceled.connect(func(): dialog.queue_free())
+	dialog.canceled.connect(close_purchase_dialog)
+	dialog.close_requested.connect(close_purchase_dialog)
 	dialog.popup_centered(Vector2i(550,220))
 
 func show_profile() -> void:
+	current_page="profile"
 	var page := open_page("PILOT IDENTITY","Your local profile • Emnio Games")
 	panel(page,Rect2(90,175,1100,425))
 	label_at(page,"ARENA NAME",Rect2(125,207,500,35),17,CYAN)
@@ -485,6 +669,7 @@ func show_profile() -> void:
 	label_at(page,"FRAGMENTS: %d    |    BEST SCORE: %d" % [profile.data.fragments,profile.data.best_score],Rect2(125,485,950,35),20,MUTED)
 
 func show_settings() -> void:
+	current_page="settings"
 	var page := open_page("SETTINGS","Tune performance, music and effects to your device.")
 	panel(page,Rect2(160,160,960,465))
 	label_at(page,"SOUND EFFECTS",Rect2(200,215,400,40),22)
@@ -512,7 +697,8 @@ func show_settings() -> void:
 	button(page,"CREDITS & LICENSES",Rect2(395,628,490,48),show_credits)
 
 func show_credits() -> void:
-	var page := open_page("EMNIO GAMES / CREDITS","War Serpent.io 1.2.0 • Emnio Games • MIT code • Original CC0 art • DejaVu fonts")
+	current_page="credits"
+	var page := open_page("EMNIO GAMES / CREDITS","War Serpent.io %s • Emnio Games • MIT code • Original CC0 art • DejaVu fonts"%ProjectSettings.get_setting("application/config/version","1.2.1"))
 	var credits := RichTextLabel.new()
 	credits.text = "DEVELOPED FOR EMNIO GAMES\nOriginal artwork, authored sprites and synthesized music. Background created with OpenAI image generation.\n\nGODOT ENGINE 4.6.3\nCopyright (c) 2014-present Godot Engine contributors.\nCopyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.\nhttps://godotengine.org/license/\n\n" + Engine.get_license_text() + "\n\nDejaVu fonts: copyright Bitstream, Inc. and DejaVu contributors. Full license below."
 	credits.scroll_active = true
@@ -531,6 +717,7 @@ func apply_settings() -> void:
 			music.stop()
 
 func show_missions() -> void:
+	current_page="missions"
 	var page := open_page("CITY CONTRACTS","Lifetime objectives • Claim each reward once")
 	var entries: Array = profile.missions()
 	for i in range(entries.size()):
@@ -550,6 +737,7 @@ func show_missions() -> void:
 		claim.disabled = claimed
 
 func show_rewards() -> void:
+	current_page="rewards"
 	var page := open_page("DAILY DROP","One crate each UTC day • No ads")
 	picture(page,"res://assets/icons/chest.png",Rect2(480,170,320,250))
 	title(page,"+75 COINS   +3 GEMS",Rect2(390,435,600,60),30)
@@ -562,6 +750,7 @@ func show_rewards() -> void:
 			toast("Already claimed today. Come back tomorrow."),true)
 
 func show_ranking() -> void:
+	current_page="records"
 	var page := open_page("LOCAL RECORD","Your personal record • Live arena standings appear during a match")
 	panel(page,Rect2(120,190,1040,360))
 	title(page,"01   " + str(profile.data.name),Rect2(170,220,850,65),35)
@@ -570,6 +759,7 @@ func show_ranking() -> void:
 	label_at(page,"%d matches  /  %d eliminations  /  %.0f seconds survived" % [profile.data.stats.runs,profile.data.stats.kills,profile.data.stats.survival],Rect2(170,465,900,35),20,MUTED)
 
 func show_achievements() -> void:
+	current_page="achievements"
 	var page := open_page("ACHIEVEMENTS","Milestones earned in the arena")
 	var all_entries: Array = profile.achievements()
 	for i in range(all_entries.size()):
@@ -585,8 +775,7 @@ func start_game() -> void:
 	play_sound("start")
 	set_music_track("arena")
 	if is_instance_valid(screen):
-		remove_child(screen)
-		screen.queue_free()
+		retire_node(screen)
 	game = ArenaScript.new()
 	game.configure(int(profile.data.equipped),int(profile.data.settings.difficulty))
 	game.finished.connect(on_finished)
@@ -601,8 +790,7 @@ func start_game() -> void:
 func on_finished(result: Dictionary) -> void:
 	last_result = result
 	if is_instance_valid(game):
-		remove_child(game)
-		game.queue_free()
+		retire_node(game)
 	if bool(result.get("abandoned",false)):
 		show_menu()
 		if result.has("network_error"):
@@ -618,7 +806,9 @@ func show_results() -> void:
 	title(screen,"ELIMINATED",Rect2(96,81,1060,68),45)
 	var score_panel:=panel(screen,Rect2(98,182,414,348))
 	label_at(score_panel,"FINAL SCORE",Rect2(28,26,360,28),14,CYAN)
-	title(score_panel,str(last_result.get("score",0)),Rect2(23,82,368,108),80)
+	var final_score:=title(score_panel,"0",Rect2(23,82,368,108),80)
+	final_score.name="AnimatedFinalScore"
+	count_label(final_score,int(last_result.get("score",0)),.70)
 	line_accent(score_panel,Rect2(28,224,356,1),Color("294052"))
 	label_at(score_panel,"PERSONAL BEST",Rect2(28,254,250,28),12,MUTED)
 	title(score_panel,str(profile.data.best_score),Rect2(28,290,350,38),25)
@@ -631,10 +821,16 @@ func show_results() -> void:
 	var earned:=panel(screen,Rect2(538,363,644,167))
 	label_at(earned,"REWARDS EARNED",Rect2(27,23,590,26),12,CYAN)
 	picture(earned,"res://assets/icons/coin.png",Rect2(27,81,35,35))
-	title(earned,"+%d"%reward.get("coins",0),Rect2(81,72,214,52),32)
+	var coins_earned:=title(earned,"+0",Rect2(81,72,214,52),32)
+	coins_earned.name="AnimatedCoins"
+	count_label(coins_earned,int(reward.get("coins",0)),.65,"+")
 	line_accent(earned,Rect2(320,73,1,53),Color("294052"))
 	label_at(earned,"XP",Rect2(353,84,50,32),18,CYAN)
-	title(earned,"+%d"%reward.get("xp",0),Rect2(416,72,192,52),32)
+	var xp_earned:=title(earned,"+0",Rect2(416,72,192,52),32)
+	xp_earned.name="AnimatedXP"
+	count_label(xp_earned,int(reward.get("xp",0)),.65,"+")
+	reveal_control(stats,.05,.28)
+	reveal_control(earned,.16,.34)
 	button(screen,"PLAY AGAIN",Rect2(98,579,414,68),start_game,true)
 	button(screen,"CHANGE SERPENT",Rect2(538,579,358,68),func():show_menu();show_collection(false))
 	button(screen,"MENU",Rect2(920,579,262,68),show_menu)
@@ -642,7 +838,10 @@ func show_results() -> void:
 func toast(message: String) -> void:
 	if is_instance_valid(toast_label):
 		toast_label.queue_free()
-	toast_label = label_at(screen,message,Rect2(150,618,980,38),18,CYAN)
+	var toast_y:=77.0 if current_page=="menu" else 126.0
+	toast_label=label_at(screen,message,Rect2(340,toast_y,600,34),15,CYAN)
+	toast_label.name="TransientNotice"
+	toast_label.add_theme_stylebox_override("normal",box(Color(.025,.045,.07,.98),Color("385369"),4))
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast_label.z_index = 40
 	# A node-bound tween dies with its toast when navigation frees the screen.
@@ -671,7 +870,10 @@ func _exit_tree() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_PAUSED and is_instance_valid(game):
 		game.paused = true
-	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+	if what==NOTIFICATION_WM_GO_BACK_REQUEST:
+		if is_instance_valid(purchase_dialog):
+			close_purchase_dialog()
+			return
 		if current_page == "game" and is_instance_valid(game) and game.has_method("toggle_pause"):
 			game.toggle_pause()
 		elif current_page != "boot":
@@ -730,8 +932,7 @@ func begin_online(host: bool, address: String, port: int) -> void:
 		toast("Unable to open this connection. Check the address and port.")
 		return
 	current_page="game"
-	remove_child(screen)
-	screen.queue_free()
+	retire_node(screen)
 	game=arena
 	add_child(game)
 	set_music_track("arena")

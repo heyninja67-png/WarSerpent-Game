@@ -1,3 +1,53 @@
+Classic reference PNG SHA256 verified b202d7b73a311d854bf9d816852d15d78f5faa7a783bf890df180412343cec5f assets/snakes/body_0.png
+
+Classic reference PNG SHA256 verified 791fee66eb3cf273c5cebc5737e6c08fd60e10ad20765fd8b7e88cf6db6b0393 assets/snakes/body_1.png
+
+Classic reference PNG SHA256 verified 49ba9d3481574d33345a805f247b44efb7a9a953bf1c3b7b7afaa7cfc4fabb9c assets/snakes/body_2.png
+
+Classic reference PNG SHA256 verified 11f143a1726e968c852d4267ac39802dcf0a50081b5d97795ecf5ffa4fd18802 assets/snakes/body_3.png
+
+Classic reference PNG SHA256 verified cb2e1087e8f31a53b64559b0b13168a85555bdc1c07e090867d9f21b3a4278c6 assets/snakes/body_4.png
+
+Classic reference PNG SHA256 verified d1d40a32c825751b650fdf1fa85227aa9cfb2b0a41ced9edc2671c2ad7fa82ca assets/snakes/body_5.png
+
+Classic reference PNG SHA256 verified 83e123e003a85812511b5e3321c466941e1c601efa32e502a9e7f859b82fe872 assets/snakes/body_6.png
+
+Classic reference PNG SHA256 verified ef8897e4ca618f1c928de28e9a2fd9ff820887161aac3903fc627a70fb60f931 assets/snakes/body_7.png
+
+Classic reference PNG SHA256 verified 4249a1038572f0e58804734e63ffddeb11b4a28122d457238e71efc7091095b8 assets/snakes/head_0.png
+
+Classic reference PNG SHA256 verified 6b415de3d592fde36604aa2ef5b1c172d7accd076ba0009ac588493a5917495c assets/snakes/head_1.png
+
+Classic reference PNG SHA256 verified 931c60bb39a9c4d5750530dc01701fb71b89c2f98d0647889e04ccf473cd2414 assets/snakes/head_2.png
+
+Classic reference PNG SHA256 verified 3eca825c2229bffa79f660b1b7f329a2ab5a37fa58ad5519e2ee28f999838451 assets/snakes/head_3.png
+
+Classic reference PNG SHA256 verified 7eab4221c8676390d30960c0115650568405c91a4c108242cb45ea613176d550 assets/snakes/head_4.png
+
+Classic reference PNG SHA256 verified f163dff347662ab54f5616735131b65ff22f0b7c01bdc4ccb8c5934c4a11460a assets/snakes/head_5.png
+
+Classic reference PNG SHA256 verified 9221caf3ed27966df6b0bdc0abd91d1beb0393b4d20d16375cde8b7eb6a7f418 assets/snakes/head_6.png
+
+Classic reference PNG SHA256 verified 6c88af62d31491db275d04ddf2352a1edf879a1ac2bbbc328a6c3a1255b4838c assets/snakes/head_7.png
+
+Classic reference PNG SHA256 verified 05997765fa370f944f77e83a3fbb811599748787989ba41c21f1882852ade28f assets/snakes/tail_0.png
+
+Classic reference PNG SHA256 verified 16b388f0119dad67954714e5829d795f7a0532e9294bf1148dcb7f069aa75be1 assets/snakes/tail_1.png
+
+Classic reference PNG SHA256 verified 37676752922b2338f0cb653bfbb057e347917b085ef235ca49adda4971a9683b assets/snakes/tail_2.png
+
+Classic reference PNG SHA256 verified d07c93f576104c933efbd29a2d4a299822ff730f924ccbaf99f608a236d02e6c assets/snakes/tail_3.png
+
+Classic reference PNG SHA256 verified 1ee1a4e7399373494f3f96cdca035dac0310561ea506c262d8373a2c69527b2e assets/snakes/tail_4.png
+
+Classic reference PNG SHA256 verified 88c5b6e8f0ef09b78f141eef1519037ca01f3abd3e3b3c6fc1111262517b08b8 assets/snakes/tail_5.png
+
+Classic reference PNG SHA256 verified 7cbf9fa7b67370d46d8c0d89cd47a24c4c11f98b9ac1a3e5fa44c9593c8f072d assets/snakes/tail_6.png
+
+Classic reference PNG SHA256 verified 2425feff6fdf3d60f8ac5f89d42b4e51f86fe848e826ef69e1f3a6d0627825bc assets/snakes/tail_7.png
+
+All24 classic PNG files byte-exact to reference e31130e13de1bd6b8ebee193da3f64602aa14b5d; canonical manifest SHA256 42b8818e9679c97343691727e9cb971c948f3561bf07803b6fe512a7a4e03a18
+
 $ /workspace/toolchains/android-sdk/build-tools/35.0.1/apksigner verify --verbose --print-certs /workspace/WarSerpent-Game/builds/WarSerpentIO-debug.apk
 Verifies
 Verified using v1 scheme (JAR signing): false
@@ -20,7 +70,7 @@ Signer #1 public key MD5 digest: e8cead44bc7c9e3eb1338c325a24b043
 exit=0
 
 $ /workspace/toolchains/android-sdk/build-tools/35.0.1/aapt dump badging /workspace/WarSerpent-Game/builds/WarSerpentIO-debug.apk
-package: name='com.emnioggs.warserpent' versionCode='3' versionName='1.2.0' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
+package: name='com.emnioggs.warserpent' versionCode='4' versionName='1.2.1' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
 install-location:'auto'
 sdkVersion:'24'
 targetSdkVersion:'36'
@@ -142,8 +192,8 @@ exit=0
 $ /workspace/toolchains/android-sdk/build-tools/35.0.1/aapt dump xmltree /workspace/WarSerpent-Game/builds/WarSerpentIO-debug.apk AndroidManifest.xml
 N: android=http://schemas.android.com/apk/res/android
   E: manifest (line=2)
-    A: android:versionCode(0x0101021b)=(type 0x10)0x3
-    A: android:versionName(0x0101021c)="1.2.0" (Raw: "1.2.0")
+    A: android:versionCode(0x0101021b)=(type 0x10)0x4
+    A: android:versionName(0x0101021c)="1.2.1" (Raw: "1.2.1")
     A: android:installLocation(0x010102b7)=(type 0x10)0x0
     A: android:compileSdkVersion(0x01010572)=(type 0x10)0x24
     A: android:compileSdkVersionCodename(0x01010573)="16" (Raw: "16")
@@ -255,11 +305,11 @@ exit=0
 
 Packaged Android runtime arguments: ["--xr_mode_regular", "--xr-mode", "off", "--fullscreen", "--edge_to_edge", "--background_color", "#000000"]
 
-$ godot --headless --path /tmp/warserpent-apk-resources-g3jqfcal/bundle --script /tmp/warserpent-apk-resources-g3jqfcal/check_packaged_game.gd
+$ godot --headless --path /tmp/warserpent-apk-resources-updd8wib/bundle --script /tmp/warserpent-apk-resources-updd8wib/check_packaged_game.gd
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
 
 PACKAGED_HOST_HINT=LAN ROOM  172.31.2.94:24680
-PACKAGED_BRANDING={"arena_floor":{"height":512,"pixel_sha256":"40a3c7a654554d7f2aca5b8cc88d6fd8e446bd0d0fdaf3b4c2164e7b4bc6342f","width":512},"icon":{"height":1254,"pixel_sha256":"03d031de5eda1b50e70c8c9c383c9bbded3f42385f3127f779b1e71892ca3ec1","width":1254},"logo":{"height":809,"pixel_sha256":"13e9b52a5fbc05a8cbe91101838827237be992652e8b75c76c53a991a0f65a8d","width":1942},"skin_0_body":{"height":64,"pixel_sha256":"c4257245d8e94cd0ebc973a648e0ff148aa903c9fec1b25e025eef069dd62f53","width":64},"skin_0_head":{"height":76,"pixel_sha256":"ce100b3f48980d2a521c15b83bcd5acc9a26e3de4478ff0a8ff78ce6784299f2","width":96},"skin_0_tail":{"height":64,"pixel_sha256":"3da8d4bc98fb217d024708b60a5ba93cbc7ee100b02e774334c0540c39763ebc","width":96},"skin_1_body":{"height":64,"pixel_sha256":"f023cd4a39f73830898a2b87f8ccb01b7e19132cbf6efb765a2ea9888187ea41","width":64},"skin_1_head":{"height":76,"pixel_sha256":"2916d8100fedbe1eba2dcfdb61611a370a770d9886cdfdd233bd9e6bca36dd9a","width":96},"skin_1_tail":{"height":64,"pixel_sha256":"ab38e9d36a19ade1b8049cf8fcad575c6be515c77fdd33bef9a9e359f1b378c3","width":96},"skin_2_body":{"height":64,"pixel_sha256":"3943dd372940b554006134488c93207855015ef4e1e03acbe6689f2121056b2e","width":64},"skin_2_head":{"height":76,"pixel_sha256":"0bf7fbf55bb89d07d1ea69267e0cb0285f1b70d3b2c6b8dbbd0c270e0a3b1df2","width":96},"skin_2_tail":{"height":64,"pixel_sha256":"ad6e0221268dc22e447932b1e87e469433110d836977a7edf0054e8736f948d6","width":96},"skin_3_body":{"height":64,"pixel_sha256":"26fcf4e94f83284f1110ffa034d14f2883396d462aeb45d640a13f9b3a15e575","width":64},"skin_3_head":{"height":76,"pixel_sha256":"7c7e555a6e9fa0ae9dd1ce3c99b7a1990b92f669af913dfb774f0d787f9b3fbc","width":96},"skin_3_tail":{"height":64,"pixel_sha256":"cb2cf7f33fc6fe29f01396bb4dfd6606c311a5873dc4b70257265818200e5df5","width":96},"skin_4_body":{"height":64,"pixel_sha256":"2a01759c0a1087792f217a66dfa9da5675fb86312710780882f4e2ca581e6d89","width":64},"skin_4_head":{"height":76,"pixel_sha256":"d5d65874badffa19eb6b16fc356cda13768fdf8ca556a83067b2980521b478c3","width":96},"skin_4_tail":{"height":64,"pixel_sha256":"3387d574f5ad72c25892058751eb588f1df97f1da75821998448e568748974ae","width":96},"skin_5_body":{"height":64,"pixel_sha256":"be79ff3d074ec464a4e6e07934887a358b6f68c5d1e3675c80886c8cffd9a4a6","width":64},"skin_5_head":{"height":76,"pixel_sha256":"3621f5b3957485ddf8fbd4ebfc4236270a13d13ad80a47f021cdc75660581aba","width":96},"skin_5_tail":{"height":64,"pixel_sha256":"80e1547103d5c4b7cc6ef27a47c2b37278450d6babbc2f797a01ae8b0337f30b","width":96},"skin_6_body":{"height":64,"pixel_sha256":"e4a4c7a99178fab7f3c10f1b29edd69b59951e9cd7b5af84033959f4f07ff34b","width":64},"skin_6_head":{"height":76,"pixel_sha256":"a4a17bcd03f12f5fcba2176f20eff7842fc87ae559690030733aec3f46bffd9f","width":96},"skin_6_tail":{"height":64,"pixel_sha256":"316416b833d734f891698fb33a51c7171cddfc16ea6789438589abd092b47eb2","width":96},"skin_7_body":{"height":64,"pixel_sha256":"c13a9b741ca72a958db7f15f0b58a4054672be5e18830ce71b03af9f9eaee631","width":64},"skin_7_head":{"height":76,"pixel_sha256":"3982b911cb707975611340ca2e05c7e9562254b8699afb6d3411cdfe0abf66da","width":96},"skin_7_tail":{"height":64,"pixel_sha256":"1aa4c1ad47126f08a5081c3cb56abc475d735a880da3acbb5b2f4c6042e63d5b","width":96},"studio":{"height":793,"pixel_sha256":"3fcafd17dbfedc0a292bbbea73e7d67e164467172680d37183a34e02f328a043","width":1983}}
+PACKAGED_BRANDING={"arena_floor":{"height":512,"pixel_sha256":"40a3c7a654554d7f2aca5b8cc88d6fd8e446bd0d0fdaf3b4c2164e7b4bc6342f","width":512},"icon":{"height":1254,"pixel_sha256":"03d031de5eda1b50e70c8c9c383c9bbded3f42385f3127f779b1e71892ca3ec1","width":1254},"logo":{"height":809,"pixel_sha256":"13e9b52a5fbc05a8cbe91101838827237be992652e8b75c76c53a991a0f65a8d","width":1942},"skin_0_body":{"height":64,"pixel_sha256":"c3ebd1f3eb4612d68ec3e186f77b2ac96d61725ad0c573344f72a8d7249ae985","width":64},"skin_0_head":{"height":76,"pixel_sha256":"1405fcd6267b04773d6999d93dbe45afa39a6181f54f5cb3e315619bc9f59e37","width":96},"skin_0_tail":{"height":64,"pixel_sha256":"6e78f29a77c4ab5526577cff454492ee905e6892fcff9a3c1016daee86a8c023","width":96},"skin_1_body":{"height":64,"pixel_sha256":"c08520a2f0ec4671794daa72842eb988f331c079bd6a236c0d3f5a0ffde58098","width":64},"skin_1_head":{"height":76,"pixel_sha256":"8538d01f8eb03f714c0ab67d5099dc0369d46cb0293b90deb832750d53ec8f5c","width":96},"skin_1_tail":{"height":64,"pixel_sha256":"ce808b7ca524ef8a2f26b65d8947c7598aa4589292bb993c014b084d2928afe8","width":96},"skin_2_body":{"height":64,"pixel_sha256":"c8b5fe5e5d45e4f3936d2781ec0f2391445510ae33142b91ff5eb70ac15e96f4","width":64},"skin_2_head":{"height":76,"pixel_sha256":"662629ad485fa96b57a7dbae82cb700d2d9584360e21f5aac92eb7cce1572c81","width":96},"skin_2_tail":{"height":64,"pixel_sha256":"c179159314b72d762feb75360ccd6f827111ae74e6b7dbf343f5c7ad4fb7318b","width":96},"skin_3_body":{"height":64,"pixel_sha256":"11aecac83fe2c46b8cf8fd03aa07459577d09e7d29eb44cbd9353316c9cc13c7","width":64},"skin_3_head":{"height":76,"pixel_sha256":"6335c7c5b42e3d33b143d395e1b770cd2d5e040b4f91fa436f3df3487623778b","width":96},"skin_3_tail":{"height":64,"pixel_sha256":"f18f7b0131fd586915e88ba3596146b042753d83399eb693533ad9c5f94b6586","width":96},"skin_4_body":{"height":64,"pixel_sha256":"c8ce70bff512f9e1f71bc99e31cdaed52c5e50ddddcc00ad5788af2499492245","width":64},"skin_4_head":{"height":76,"pixel_sha256":"3dcc3fce04c98a94f919f39b6d0b17ae6448080e4976f2825c08a9a15bee98e6","width":96},"skin_4_tail":{"height":64,"pixel_sha256":"8b134180df647bffb68e47722d025f9b599cf12bf8219e3604d70b209c2ac095","width":96},"skin_5_body":{"height":64,"pixel_sha256":"33181b22e5c792b5c6d34c47a457346a3d0c0c194e73861267a76b620644a60d","width":64},"skin_5_head":{"height":76,"pixel_sha256":"7679b44b5acf4a28875a2d541bfd03b68310fe778fe4cba4125ef0ee3b1389af","width":96},"skin_5_tail":{"height":64,"pixel_sha256":"8282afc3080e66d186c07182e9358dfc93e053bf503cc8e87d49fa05fce1c15f","width":96},"skin_6_body":{"height":64,"pixel_sha256":"ece283ca17c53fe5555343eaca403dfff9d580830189c4faacdb22d02ab2fed0","width":64},"skin_6_head":{"height":76,"pixel_sha256":"6f3a1b5851b19f3095b3c6a80c3221a2300ef429d258c14d0df4b39eeb8dfbdc","width":96},"skin_6_tail":{"height":64,"pixel_sha256":"df47bde7f93231898fb020c35fd42ea5c0e0e1bb9c10a16fc4fe4156377d2588","width":96},"skin_7_body":{"height":64,"pixel_sha256":"f770b378c174312fd7f48761d2368c916472a3b335b5fdbedeec083a3039f6bb","width":64},"skin_7_head":{"height":76,"pixel_sha256":"650b54d515a2b808d4ba4e7d16ffc283b858bd9cc01245030f7e0d510c09e214","width":96},"skin_7_tail":{"height":64,"pixel_sha256":"992db5560fecbf029e2dbc16b639986dabebfd36593e18150bcbaeafec442958","width":96},"studio":{"height":793,"pixel_sha256":"3fcafd17dbfedc0a292bbbea73e7d67e164467172680d37183a34e02f328a043","width":1983}}
 PACKAGED_GAME_RESOURCE_CHECKS=146 FAILURES=0
 PACKAGED_MUSIC={"arena":{"decoded_peak":0.687072932720184,"duration":45.1764640808105,"loop":true},"menu":{"decoded_peak":0.767738938331604,"duration":45.1764640808105,"loop":true}}
 PACKAGED_ENGINE_BOOT_IMAGE=false; ASPECT=expand; NATIVE_CUSTOM_ICON_DENSITIES=6
@@ -268,7 +318,7 @@ exit=0
 
 Official release-template native payload verified SHA256 c4c2fe5cbcb1fba0003a31fc7ab29a9bb12df6cc187ec45a806462540e83d93b lib/arm64-v8a/libc++_shared.so
 
-$ readelf -lW /tmp/warserpent-elf-j5q4ls5i/lib/arm64-v8a/libc++_shared.so
+$ readelf -lW /tmp/warserpent-elf-rzd8nwan/lib/arm64-v8a/libc++_shared.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0
@@ -306,7 +356,7 @@ exit=0
 
 Official release-template native payload verified SHA256 b4085c7f15575246530474b1fa4291c70e4a8177173d2d6fc597300208cac282 lib/arm64-v8a/libgodot_android.so
 
-$ readelf -lW /tmp/warserpent-elf-j5q4ls5i/lib/arm64-v8a/libgodot_android.so
+$ readelf -lW /tmp/warserpent-elf-rzd8nwan/lib/arm64-v8a/libgodot_android.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0
@@ -340,7 +390,7 @@ exit=0
 
 Official release-template native payload verified SHA256 af383654daf4cf0829615460419a180f84edd9d8bf51aa0f81ed0db811bf8491 lib/armeabi-v7a/libc++_shared.so
 
-$ readelf -lW /tmp/warserpent-elf-j5q4ls5i/lib/armeabi-v7a/libc++_shared.so
+$ readelf -lW /tmp/warserpent-elf-rzd8nwan/lib/armeabi-v7a/libc++_shared.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0
@@ -374,7 +424,7 @@ exit=0
 
 Official release-template native payload verified SHA256 c8687b05ea01f772647db6ba7bc85439b687c2603df63555796558f5e1f97bb9 lib/armeabi-v7a/libgodot_android.so
 
-$ readelf -lW /tmp/warserpent-elf-j5q4ls5i/lib/armeabi-v7a/libgodot_android.so
+$ readelf -lW /tmp/warserpent-elf-rzd8nwan/lib/armeabi-v7a/libgodot_android.so
 
 Elf file type is DYN (Shared object file)
 Entry point 0x0

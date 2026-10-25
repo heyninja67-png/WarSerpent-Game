@@ -6,6 +6,8 @@ var accent := Color("45e9f5")
 func _ready() -> void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 func _process(delta: float) -> void:
+	if not is_visible_in_tree():
+		return
 	phase+=delta
 	tick+=delta
 	if tick>=1.0/24.0:

@@ -1,0 +1,81 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS starter snake has ten connected segments with boost mass
+PASS constant movement covers expected distance
+PASS straight movement maintains axis
+PASS body is sampled by distance with consistent segment spacing
+PASS smooth curved path preserves spacing
+PASS small snake turns responsively while large snake keeps readable radius
+PASS steering reaches nearby target without overshoot
+PASS steering crosses angular wrap by shortest route
+PASS 30 and 60 Hz steering settle consistently
+PASS rapid boost and dash direction changes keep body connected
+PASS movement is time based at 30 FPS
+PASS energy grows snake and awards score
+PASS boost increases actual movement speed
+PASS boost consumes mass with lower bound
+PASS boost stops at minimum mass
+PASS skill activates when ready
+PASS cooldown blocks repeated activation
+PASS electric overdrive changes speed
+PASS skill tracks cooldown and duration independently
+PASS cooldown expires and permits reuse
+PASS skill can activate after cooldown
+PASS cyber shield absorbs a collision
+PASS shield is consumed by collision
+PASS consumed shield does not prevent later collision
+PASS phantom avoids collision and negative slow while active
+PASS phantom protection has finite duration
+PASS samurai dash produces real speed increase
+PASS samurai dash is brief and cooldown limited
+PASS solar magnet expands actual collection radius
+PASS solar magnet range returns to normal after duration
+PASS all eight skill durations and cooldowns match catalog
+PASS fixed ring history wraps while long curved body keeps spacing
+PASS spatial query includes neighboring and negative cells
+PASS spatial hash resets without stale collisions
+PASS low profile starts player, five bots and pooled energy
+PASS HUD exposes initial spawn protection and safe-center state
+PASS joystick center noise below enter radius cannot drift
+PASS hysteresis retains a deliberate small held direction
+PASS return to center releases steering until enter threshold crossed again
+PASS joystick drag outside radius stays normalized
+PASS boundary danger rises before reaching lethal arena edge
+PASS boundary warning clears when returning toward center
+PASS circular minimap contains actual live actors and one player marker
+PASS minimap world mapping stays within circular boundary
+PASS minimap cache does not rebuild on every render frame
+PASS minimap refreshes throttled cache from changed actor positions
+PASS three simultaneous touch identities steer, boost and use skill
+PASS touch ability button changes actual ability state
+PASS releasing joystick preserves held boost touch
+PASS center boost widget is bound to the real held boost control
+ERROR: FAIL releasing center boost preserves the independently held primary touch
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/test_gameplay.gd:16)
+       [1] run (res://tests/test_gameplay.gd:229)
+PASS releasing the final boost owner clears the held boost state
+PASS touch pause ignores duplicate Android mouse emulation
+PASS pause clears every held touch identity and steering latch
+PASS application focus loss clears controls without stuck boost
+PASS Android application pause suspends active local gameplay
+PASS arena collection deactivates food and awards real mass
+PASS pickup feedback aggregates actual collected energy
+PASS pickup feedback freezes while paused
+PASS pickup feedback expires instead of accumulating UI objects
+PASS flame burst slows nearby opponents
+PASS frost ability creates persistent slowing trail
+PASS frozen trail slows other snakes
+PASS toxic cloud slows opponents inside its area
+PASS solar magnet actually collects energy beyond normal radius
+PASS remote control advances same model and consumes skill tap
+PASS network clients can disable local authoritative simulation
+PASS bot steers away from lethal arena edge
+PASS actual body collision consumes shield and triggers bounded feedback
+PASS head-body collision eliminates snake and credits killer
+PASS player death begins defeat transition
+PASS unprotected head-to-head collision eliminates both consistently
+PASS protected head survives head-to-head without extending protection
+PASS result signal supplies actual match statistics
+GAMEPLAY TESTS: 74 checks, 1 failures

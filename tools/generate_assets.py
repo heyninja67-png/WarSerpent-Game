@@ -412,10 +412,10 @@ for x in range(-128,512,128):
 save(im,Path('arenas/neon_city.png'))
 print('v1.2 authored navigation icons, neutral energy sprite, inset metal arena tile generated.')
 
-# Final v1.2 reference-aligned original materials and glossy species.
+# Final v1.2.1 materials and restored original angular cyber species.
 # Generated EMNIO GAMES and War Serpent brand PNGs are never edited by these tools.
 import runpy
-runpy.run_path(str(ROOT/'tools'/'generate_snake_sprites.py'), run_name='__main__')
+runpy.run_path(str(ROOT/'tools'/'generate_classic_snakes.py'), run_name='__main__')
 runpy.run_path(str(ROOT/'tools'/'generate_lobby_materials.py'), run_name='__main__')
 # Authored compatibility wordmark also spells out the full studio name.
 im,d=canvas(1000,270)

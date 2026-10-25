@@ -1,9 +1,9 @@
-SOURCE ARCHIVE v1.2 — fresh extraction, no caches; new imports clean, flow exit0
+SOURCE ARCHIVE v1.2.1 — fresh extraction without caches, clean import, UI flow exit0
 Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
 
 PASS: startup begins with custom Emnio splash
 PASS: engine boot logo is disabled
-PASS: project reports version1.2.0
+PASS: project reports version1.2.1
 PASS: first animated splash uses the new Emnio Games studio artwork
 PASS: loading counter measures actual resource jobs
 PASS: splash contains no loading status phrases
@@ -37,6 +37,7 @@ PASS: collection opens
 PASS: collection renders four previews per page
 PASS: first collection page contains skins0 through3
 PASS: first collection page stays inside screen
+PASS: first collection page text and controls neither clip nor overlap
 PASS: collection page exposes four readable power timing labels
 PASS: Volt Serpent card reports real duration and cooldown
 PASS: Inferno Viper card reports real duration and cooldown
@@ -46,6 +47,7 @@ PASS: functional button exists: ›
 PASS: next button changes collection page
 PASS: second page exposes all four additional skins
 PASS: second page fits screen and uses English descriptions
+PASS: all additional skin cards keep text and controls separate
 PASS: collection page exposes four readable power timing labels
 PASS: Shadow Phantom card reports real duration and cooldown
 PASS: Solar Wyrm card reports real duration and cooldown
@@ -77,9 +79,11 @@ PASS: daily reward cannot be claimed twice
 PASS: functional button exists: BACK
 PASS: functional button exists: RECORDS
 PASS: records screen identifies itself as local
+PASS: local record text and controls fit without overlap
 PASS: functional button exists: BACK
 PASS: functional button exists: ACHIEVEMENTS
 PASS: achievement page shows real English milestones
+PASS: achievement rows and status labels neither clip nor overlap
 PASS: functional button exists: BACK
 PASS: functional button exists: SETTINGS
 PASS: settings exposes independent SFX and music switches
@@ -91,6 +95,7 @@ PASS: Low quality applies30 FPS target
 PASS: settings controls fit screen and use English
 PASS: functional button exists: CREDITS & LICENSES
 PASS: credits opens scrollable license text
+PASS: credits heading and navigation do not overlap the scrollable license body
 PASS: credits include Godot and font attribution/license
 PASS: functional button exists: BACK
 PASS: functional button exists: PILOT  /  LV. 1
@@ -103,6 +108,7 @@ PASS: mode selector exposes actual online workflow
 PASS: functional button exists: START ONLINE
 PASS: online page exposes host and join actions
 PASS: online connection page is English and fits viewport
+PASS: online address labels and connection controls neither clip nor overlap
 PASS: functional button exists: JOIN ROOM
 PASS: empty join address reports validation without fake connected state
 PASS: functional button exists: HOST ROOM
@@ -114,13 +120,13 @@ PASS: functional button exists: JOIN ROOM
 PASS: join button starts actual client connection attempt
 PASS: unreachable client does not pretend to be connected
 PASS: menu controls visible at physical(1280, 720)
-PASS: menu artwork fills viewport without black bars at(1280, 720)
+PASS: animated artwork covers viewport without black bars at(1280, 720)
 PASS: collection controls visible at physical(1280, 720)
 PASS: menu controls visible at physical(1600, 720)
-PASS: menu artwork fills viewport without black bars at(1600, 720)
+PASS: animated artwork covers viewport without black bars at(1600, 720)
 PASS: collection controls visible at physical(1600, 720)
 PASS: menu controls visible at physical(1280, 900)
-PASS: menu artwork fills viewport without black bars at(1280, 900)
+PASS: animated artwork covers viewport without black bars at(1280, 900)
 PASS: collection controls visible at physical(1280, 900)
 PASS: functional button exists: START
 PASS: play starts actual offline arena
@@ -136,10 +142,14 @@ PASS: minimap identifies the actual player and all initial opponents
 PASS: minimap markers use actual snake IDs and stay inside the circle
 PASS: minimap marker directions agree with opponents' real world positions
 PASS: actual minimap transform centers the world and keeps all arena corners visible
+PASS: important HUD interaction areas stay within the canvas
+PASS: minimap joystick power boost and pause areas do not overlap
 PASS: snake continuously moves through physics updates
 PASS: protection indicator counts down with simulation time
 PASS: actual minimap refresh count respects its capped update budget
 PASS: minimap player indicator updates with real movement in the correct direction
+PASS: leaderboard renders one coherent sorted score and rank snapshot with the actual player
+PASS: leaderboard displayed names and scores fit their assigned pixel widths
 PASS: food collision increases real score
 PASS: real energy collection activates pickup feedback
 PASS: dispatcher delivers simultaneous joystick and boost touches
@@ -149,6 +159,8 @@ PASS: releasing boost preserves steering and ability fingers
 PASS: releasing steering preserves independent boost and ability fingers
 PASS: releasing ability preserves held boost
 PASS: touch release clears control owners
+PASS: releasing center boost preserves the simultaneously held primary boost
+PASS: releasing primary boost preserves the simultaneously held center boost
 PASS: secondary center BOOST control drives actual acceleration
 PASS: dispatched pause touch pauses simulation
 PASS: pause clears every held touch owner
@@ -162,6 +174,12 @@ PASS: ordinary defeat never claims network connection loss
 PASS: defeat saves exactly one run with survival time
 PASS: collected score updates record and real rewards
 PASS: results are English and controls fit screen
+PASS: result animation targets the actual completed-run score
+PASS: animated score reaches its exact real final value
+PASS: reward animations finish on the exact coins and XP actually granted
+PASS: settled result numbers and controls neither clip nor overlap
+PASS: result score visibly progresses through real intermediate numbers
+PASS: replaying and interrupting result animations cannot farm a second reward
 PASS: functional button exists: PLAY AGAIN
 PASS: restart begins fresh playable serpent
 PASS: standalone ability touch is not intercepted by the steering region
@@ -170,4 +188,59 @@ PASS: new profile instance reloads saved state
 PASS: name inventory and equipped skin survive reopen
 PASS: economy and record survive reopen
 PASS: graphics and independent audio preferences survive reopen
-FLOW RESULT: 169 passed, 0 failed
+PASS: lobby text and important controls are neither clipped nor overlapping
+PASS: mode button's actual theme height does not overlap the arena title
+PASS: actual hover animates START without moving it out of bounds
+PASS: press transition interrupts hover and visibly depresses START
+PASS: dragging out and releasing restores START without starting a game
+PASS: rapid owned-skin clicks reuse one hero and finish on the last actual selection
+PASS: skin transition animations cannot grant or spend rewards
+PASS: real pointer target is available: SHOP
+PASS: modal SHOP hides and blocks the underlying lobby
+PASS: SHOP entrance keeps text and controls separate
+PASS: real pointer target is available: BACK
+PASS: BACK retires SHOP before another page can receive input
+PASS: real pointer target is available: MISSIONS
+PASS: modal MISSIONS hides and blocks the underlying lobby
+PASS: MISSIONS entrance keeps text and controls separate
+PASS: real pointer target is available: BACK
+PASS: BACK retires MISSIONS before another page can receive input
+PASS: real pointer target is available: REWARDS
+PASS: modal REWARDS hides and blocks the underlying lobby
+PASS: REWARDS entrance keeps text and controls separate
+PASS: real pointer target is available: BACK
+PASS: BACK retires REWARDS before another page can receive input
+PASS: real pointer target is available: SETTINGS
+PASS: modal SETTINGS hides and blocks the underlying lobby
+PASS: SETTINGS entrance keeps text and controls separate
+PASS: real pointer target is available: BACK
+PASS: BACK retires SETTINGS before another page can receive input
+PASS: real pointer target is available: SHOP
+PASS: EQUIPPED button's actual theme height fits inside its skin card
+PASS: interrupting pagination immediately hides and blocks both old modal layers
+PASS: interrupted page tweens cannot resurrect or overlap the current settings page
+PASS: real pointer target is available: BACK
+PASS: real pointer target is available: SHOP
+PASS: real pointer target is available: ›
+PASS: live resize preserves the active collection page without rebuilding it
+PASS: live wide resize keeps artwork text and controls within the active viewport
+PASS: real pointer target is available: BACK
+PASS: real pointer target is available: NOVA TEST  /  LV. 1
+PASS: live tall resize preserves unsaved form input and its existing control
+PASS: live tall resize keeps the open form and its text fully visible
+PASS: real pointer target is available: BACK
+PASS: real pointer target is available: SHOP
+PASS: real pointer target is available: 250 COINS
+PASS: purchase confirmation fits within the current physical window
+PASS: live resize recenters the same purchase dialog inside the window
+PASS: Android Back dismisses a purchase dialog before leaving its market page
+PASS: real pointer target is available: 250 COINS
+PASS: navigation removes purchase popups and rejects a stale confirmation callback
+PASS: lobby notice cannot cover START
+PASS: real pointer target is available: SHOP
+PASS: shop notice does not cover purchase controls or important text
+PASS: real pointer target is available: BACK
+PASS: large real menu values remain exact and fit their labels
+PASS: all UI navigation and display animations preserve real economy and completed runs
+PASS: the complete UI stress workflow executed without aborting a coroutine
+FLOW RESULT: 242 passed, 0 failed

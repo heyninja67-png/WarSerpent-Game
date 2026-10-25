@@ -11,20 +11,12 @@ var head: Texture2D
 var body: Texture2D
 var tail: Texture2D
 var body_instances: MultiMeshInstance2D
+var skin_transition: Tween
 const SEGMENTS := 26
 
 func _ready() -> void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
-	for part in ["head","body","tail"]:
-		var key := "%s_%d" % [part,skin_id]
-		if not texture_cache.has(key):
-			var path := "res://assets/snakes/%s.png" % key
-			if not ResourceLoader.exists(path):
-				path="res://assets/snakes/%s_0.png" % part
-			texture_cache[key]=load(path)
-		head=texture_cache[key] if part=="head" else head
-		body=texture_cache[key] if part=="body" else body
-		tail=texture_cache[key] if part=="tail" else tail
+	load_skin_assets()
 	var quad := QuadMesh.new()
 	quad.size=Vector2(40,40)
 	var mesh := MultiMesh.new()
@@ -38,6 +30,34 @@ func _ready() -> void:
 	body_instances.show_behind_parent=true
 	add_child(body_instances)
 	update_body()
+
+func load_skin_assets() -> void:
+	for part in ["head","body","tail"]:
+		var key := "%s_%d" % [part,skin_id]
+		if not texture_cache.has(key):
+			var path := "res://assets/snakes/%s.png" % key
+			if not ResourceLoader.exists(path):
+				path="res://assets/snakes/%s_0.png" % part
+			texture_cache[key]=load(path)
+		head=texture_cache[key] if part=="head" else head
+		body=texture_cache[key] if part=="body" else body
+		tail=texture_cache[key] if part=="tail" else tail
+	if is_instance_valid(body_instances):
+		body_instances.texture=body
+	queue_redraw()
+
+func transition_to_skin(id: int) -> void:
+	skin_id=id
+	if has_meta("entrance_tween"):
+		var entrance:Tween=get_meta("entrance_tween")
+		if entrance!=null and entrance.is_valid():
+			entrance.kill()
+	if skin_transition!=null and skin_transition.is_valid():
+		skin_transition.kill()
+	skin_transition=create_tween()
+	skin_transition.tween_property(self,"modulate:a",.25,.11)
+	skin_transition.tween_callback(load_skin_assets)
+	skin_transition.tween_property(self,"modulate:a",1.0,.19).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 func _process(delta: float) -> void:
 	if not is_visible_in_tree():

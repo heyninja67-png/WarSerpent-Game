@@ -148,6 +148,101 @@ func run() -> void:
 	game.set_process(false)
 	check(game.snakes.size() == 6 and game.foods.size() == 420, "low profile starts player, five bots and pooled energy")
 	check(game.hud_state().protection_remaining > 0 and game.hud_state().danger == 0, "HUD exposes initial spawn protection and safe-center state")
+	var rank_a: SnakeModel = game.snakes[1]
+	var rank_b: SnakeModel = game.snakes[2]
+	var saved_a_name := rank_a.nickname
+	var saved_b_name := rank_b.nickname
+	rank_a.score = 13
+	rank_b.score = 7
+	rank_a.nickname = "SCORE_A"
+	rank_b.nickname = "SCORE_B"
+	game.update_ranking()
+	var rank_snapshot := game.leaderboard_state()
+	rank_b.score = 20
+	rank_b.nickname = "CHANGED"
+	var frozen_b_score := -1
+	var frozen_b_name := ""
+	for row: Dictionary in game.leaderboard_state():
+		if row.id == rank_b.id:
+			frozen_b_score = row.score
+			frozen_b_name = row.name
+	check(frozen_b_score == 7 and frozen_b_name == "SCORE_B", "leaderboard order, scores and names remain one coherent cached snapshot")
+	var ranks_coherent := true
+	var previous_rank_score := 2147483647
+	for row: Dictionary in game.leaderboard_state():
+		ranks_coherent = ranks_coherent and int(row.score) <= previous_rank_score and int(row.rank) > 0
+		previous_rank_score = row.score
+	check(ranks_coherent, "displayed leaderboard scores stay descending between refreshes")
+	game._ranking_timer = 0.3
+	game._process(0.1)
+	check(game.leaderboard_state()[0].id == rank_a.id and game.leaderboard_state()[0].score == 13, "leaderboard does not mix live scores into its throttled display")
+	game._process(0.21)
+	check(game.leaderboard_state()[0].id == rank_b.id and game.leaderboard_state()[0].score == 20 and game.leaderboard_state()[0].name == "CHANGED", "next leaderboard refresh updates order, name and score together")
+	var original_player: SnakeModel = game.player
+	game.player = rank_b
+	game._process(0.0)
+	var player_rows := 0
+	var correct_online_identity := true
+	for row: Dictionary in game.leaderboard_state():
+		if row.player:
+			player_rows += 1
+			correct_online_identity = correct_online_identity and row.id == rank_b.id
+	check(player_rows == 1 and correct_online_identity and game._player_rank == 1, "online player identity highlights and ranks its actual nonzero snake ID")
+	game.player = original_player
+	rank_a.score = 0
+	rank_b.score = 0
+	rank_a.nickname = saved_a_name
+	rank_b.nickname = saved_b_name
+	game.update_ranking()
+	var tie_rows := game.leaderboard_state()
+	check(tie_rows[0].id == 0 and tie_rows[1].id == 1, "equal-score leaderboard ties have deterministic stable ordering")
+	tie_rows[0].score = 999
+	check(game.leaderboard_state()[0].score == 0, "external leaderboard inspection cannot mutate rendered cached rows")
+	rank_a.nickname = "W".repeat(18)
+	rank_b.nickname = "界".repeat(18)
+	rank_a.score = 9223372036854775807
+	rank_b.score = 1234567890123
+	game.update_ranking()
+	var pixel_fit_names := true
+	var pixel_fit_scores := true
+	var right_edge_safe := true
+	for row: Dictionary in game.leaderboard_state():
+		var name_width := game.font.get_string_size(str(row.name), HORIZONTAL_ALIGNMENT_LEFT, -1, game.LEADERBOARD_FONT_SIZE).x
+		var score_width := game.font.get_string_size(str(row.score_text), HORIZONTAL_ALIGNMENT_LEFT, -1, game.LEADERBOARD_FONT_SIZE).x
+		pixel_fit_names = pixel_fit_names and name_width <= game.LEADERBOARD_NAME_WIDTH
+		pixel_fit_scores = pixel_fit_scores and score_width <= game.LEADERBOARD_SCORE_WIDTH and absf(score_width - float(row.score_width)) < 0.01
+		# Name starts at width-194, score right edge is width-24.
+		right_edge_safe = right_edge_safe and (170.0 - name_width - score_width) >= 16.0
+	check(pixel_fit_names, "wide Latin and Unicode leaderboard names fit their actual pixel budget")
+	check(game.fit_leaderboard_name("W".repeat(18)).ends_with("…") and game.fit_leaderboard_name("AKIRA") == "AKIRA", "long leaderboard names use measured ellipsis while short names remain intact")
+	check(pixel_fit_scores and game.leaderboard_state()[0].score == 9223372036854775807, "huge scores use bounded compact labels while keeping exact ranking values")
+	check(right_edge_safe, "pixel-fitted names and right-aligned score column keep a safe gap")
+	rank_a.nickname = saved_a_name
+	rank_b.nickname = saved_b_name
+	rank_a.score = 0
+	rank_b.score = 0
+	game.update_ranking()
+	game.player.mass = 92
+	game._process(0.04)
+	check(game._boost_mass_display > 0.3 and game._boost_mass_display < 1.0, "boost mass meter interpolates toward actual reserve without jumping")
+	game._process(1.0)
+	check(game._boost_mass_display <= 1.0 and game._boost_mass_display > 0.99, "boost mass animation stays bounded and converges")
+	game.player.mass = 36
+	game._boost_mass_display = 0.3
+	game.player.score = 5
+	game._last_seen_score = 0
+	game._process(0.01)
+	check(game._score_pop_remaining > 0, "score pop starts only after a real score increase")
+	game.paused = true
+	var frozen_score_pop := game._score_pop_remaining
+	game._process(0.1)
+	check(game._score_pop_remaining == frozen_score_pop, "score animation freezes while gameplay is paused")
+	game.paused = false
+	game._process(0.31)
+	check(game._score_pop_remaining == 0, "score animation expires without repeated score changes")
+	game.player.score = 0
+	game._last_seen_score = 0
+	game.update_ranking()
 	var center := game.joystick_center(game.get_viewport_rect().size)
 	game.update_joystick(center + Vector2(11, 0), game.get_viewport_rect().size)
 	check(game.joystick_vector == Vector2.ZERO, "joystick center noise below enter radius cannot drift")
@@ -214,6 +309,42 @@ func run() -> void:
 	check(game.boost_id == 8, "center boost widget is bound to the real held boost control")
 	center_boost_touch.pressed = false
 	game._input(center_boost_touch)
+	var primary_owner := InputEventScreenTouch.new()
+	primary_owner.index = 1
+	primary_owner.position = game.boost_center(game.get_viewport_rect().size)
+	primary_owner.pressed = true
+	game._input(primary_owner)
+	var secondary_owner := InputEventScreenTouch.new()
+	secondary_owner.index = 3
+	secondary_owner.position = game.boost_secondary_center(game.get_viewport_rect().size)
+	secondary_owner.pressed = true
+	game._input(secondary_owner)
+	secondary_owner.pressed = false
+	game._input(secondary_owner)
+	check(game.boost_id == 1, "releasing center boost preserves the independently held primary touch")
+	game._physics_process(0.05)
+	check(game.player.boosting and game.boost_down, "remaining primary touch continues actual accelerated movement")
+	secondary_owner.pressed = true
+	game._input(secondary_owner)
+	primary_owner.pressed = false
+	game._input(primary_owner)
+	check(game.boost_id == 3, "releasing primary boost preserves an independently held center touch")
+	game._physics_process(0.05)
+	check(game.player.boosting, "remaining center touch continues actual accelerated movement")
+	secondary_owner.pressed = false
+	game._input(secondary_owner)
+	check(game.boost_id == -1 and game._boost_touch_owners.is_empty(), "releasing the final boost owner clears the held boost state")
+	primary_owner.pressed = true
+	secondary_owner.pressed = true
+	game._input(primary_owner)
+	game._input(secondary_owner)
+	game._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(game.boost_id == -1 and game._boost_touch_owners.is_empty(), "focus loss clears every boost owner so stale releases cannot revive boosting")
+	primary_owner.pressed = false
+	secondary_owner.pressed = false
+	game._input(primary_owner)
+	game._input(secondary_owner)
+	check(game.boost_id == -1, "late touch releases remain safe after boost-owner reset")
 	game.player.cooldown = 0
 	game.player.active_time = 0
 	var pause_touch := InputEventScreenTouch.new()

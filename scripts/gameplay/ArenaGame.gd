@@ -36,6 +36,7 @@ var quality := 1
 var player_name := "PILOT"
 var joystick_id := -1
 var boost_id := -1
+var _boost_touch_owners: Dictionary = {}
 var skill_id := -1
 var joystick_vector := Vector2.ZERO
 var _steering_active := false
@@ -58,6 +59,8 @@ var body_textures: Array[Texture2D] = []
 var _body_counts := PackedInt32Array()
 var _panel_styles: Dictionary = {}
 var _ranking: Array[SnakeModel] = []
+var _ranking_rows: Array[Dictionary] = []
+var _ranking_player_id := -1
 var _ranking_timer := 0.0
 var _player_rank := 1
 var _name_widths: Dictionary = {}
@@ -68,6 +71,9 @@ var _view_rect := Rect2()
 var _pickup_remaining := 0.0
 var _pickup_total := 0
 var _shield_feedback_remaining := 0.0
+var _boost_mass_display := 0.3
+var _score_pop_remaining := 0.0
+var _last_seen_score := 0
 const MINIMAP_CENTER := Vector2(100, 98)
 const MINIMAP_RADIUS := 72.0
 const MINIMAP_REFRESH := 0.15
@@ -83,6 +89,9 @@ const BODY_SHADES := [Color(1, 1, 1), Color(0.97, 0.97, 0.97), Color(0.92, 0.92,
 const FOOD_COLORS := [Color("62eeff"), Color("e7a4ff"), Color("ffce7f"), Color("9cfcbd")]
 const MAX_FOOD := 1500
 const MAX_BODY_INSTANCES := 1500
+const LEADERBOARD_FONT_SIZE := 12
+const LEADERBOARD_NAME_WIDTH := 110.0
+const LEADERBOARD_SCORE_WIDTH := 43.0
 
 func configure(selected_skin: int, bot_difficulty: int = 1) -> void:
 	skin_index = clampi(selected_skin, 0, 7)
@@ -111,12 +120,30 @@ func set_player_name(value: String) -> void:
 func reset_controls() -> void:
 	joystick_id = -1
 	boost_id = -1
+	_boost_touch_owners.clear()
 	skill_id = -1
 	mouse_joystick = false
 	mouse_boost = false
 	boost_down = false
 	joystick_vector = Vector2.ZERO
 	_steering_active = false
+
+func hold_boost_touch(touch_id: int) -> void:
+	_boost_touch_owners[touch_id] = true
+	# Preserve the compatibility field read by offline and online controls.
+	if boost_id < 0 or not _boost_touch_owners.has(boost_id):
+		boost_id = touch_id
+
+func release_boost_touch(touch_id: int) -> void:
+	if _boost_touch_owners.has(touch_id):
+		_boost_touch_owners.erase(touch_id)
+		if _boost_touch_owners.is_empty():
+			boost_id = -1
+		elif boost_id == touch_id:
+			boost_id = int(_boost_touch_owners.keys()[0])
+	elif boost_id == touch_id:
+		# Scripts/tests may still use the legacy field without a touch owner.
+		boost_id = -1
 
 func toggle_pause() -> void:
 	paused = not paused
@@ -272,10 +299,65 @@ func sync_food_visual(index: int) -> void:
 	food_multimesh.set_instance_transform_2d(index, Transform2D(0.0, Vector2.ONE * scale_factor, 0.0, food.p))
 	food_multimesh.set_instance_color(index, FOOD_COLORS[int(food.kind) % FOOD_COLORS.size()])
 
+func fit_leaderboard_name(value: String) -> String:
+	return fit_hud_text(value.replace("\n", " ").replace("\r", " "), LEADERBOARD_FONT_SIZE, LEADERBOARD_NAME_WIDTH)
+
+func fit_hud_text(value: String, font_size: int, max_width: float) -> String:
+	var measure_font: Font = font if font != null else ThemeDB.fallback_font
+	if measure_font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= max_width:
+		return value
+	var suffix := "…"
+	var low := 0
+	var high := value.length()
+	while low < high:
+		var middle := (low + high + 1) / 2
+		var candidate := value.left(middle) + suffix
+		if measure_font.get_string_size(candidate, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= max_width:
+			low = middle
+		else:
+			high = middle - 1
+	return value.left(low) + suffix
+
+func leaderboard_score_label(value: int) -> String:
+	var magnitude := float(value)
+	var suffixes := ["", "K", "M", "B", "T", "Q", "E"]
+	var unit := 0
+	while absf(magnitude) >= 1000.0 and unit < suffixes.size() - 1:
+		magnitude /= 1000.0
+		unit += 1
+	var label := str(value)
+	if unit > 0:
+		if absf(magnitude) >= 100.0:
+			label = "%d%s" % [int(magnitude), suffixes[unit]]
+		else:
+			var truncated := signf(magnitude) * floorf(absf(magnitude) * 10.0) / 10.0
+			label = "%.1f%s" % [truncated, suffixes[unit]]
+	return fit_hud_text(label, LEADERBOARD_FONT_SIZE, LEADERBOARD_SCORE_WIDTH)
+
 func update_ranking() -> void:
 	_ranking.assign(snakes)
-	_ranking.sort_custom(func(a: SnakeModel, b: SnakeModel) -> bool: return a.score > b.score)
-	_player_rank = _ranking.find(player) + 1
+	_ranking.sort_custom(func(a: SnakeModel, b: SnakeModel) -> bool:
+		return a.score > b.score if a.score != b.score else a.id < b.id)
+	_ranking_rows.clear()
+	_ranking_player_id = player.id if player != null else -1
+	_player_rank = 0
+	for index in range(_ranking.size()):
+		var snake := _ranking[index]
+		var is_player := snake.id == _ranking_player_id
+		var score_label := leaderboard_score_label(snake.score)
+		_ranking_rows.append({"id": snake.id, "name": fit_leaderboard_name(snake.nickname),
+			"score": snake.score, "score_text": score_label,
+			"score_width": font.get_string_size(score_label, HORIZONTAL_ALIGNMENT_LEFT, -1, LEADERBOARD_FONT_SIZE).x,
+			"rank": index + 1, "rank_text": str(index + 1), "player": is_player})
+		if is_player:
+			_player_rank = index + 1
+
+func leaderboard_state() -> Array:
+	# Rendering uses the same cached values; expose a safe snapshot to validation.
+	var rows := _ranking_rows.duplicate(true)
+	for row: Dictionary in rows:
+		row.player = player != null and int(row.id) == player.id
+	return rows
 
 func random_point(margin: float = 55.0) -> Vector2:
 	return Vector2(randf_range(-BOUNDS + margin, BOUNDS - margin), randf_range(-BOUNDS + margin, BOUNDS - margin))
@@ -300,10 +382,16 @@ func _process(delta: float) -> void:
 		_minimap_remaining = MINIMAP_REFRESH
 		update_minimap()
 	_ranking_timer -= delta
-	if _ranking_timer <= 0.0:
+	if _ranking_timer <= 0.0 or (player != null and player.id != _ranking_player_id):
 		_ranking_timer = 0.3
 		update_ranking()
 	if not paused and player != null:
+		_score_pop_remaining = maxf(0.0, _score_pop_remaining - delta)
+		if player.score > _last_seen_score:
+			_score_pop_remaining = 0.3
+		_last_seen_score = player.score
+		var target_mass_meter := clampf((player.mass - SnakeModel.MIN_MASS) / 80.0, 0, 1)
+		_boost_mass_display = lerpf(_boost_mass_display, target_mass_meter, 1.0 - exp(-delta * 10.0))
 		_pickup_remaining = maxf(0.0, _pickup_remaining - delta)
 		_shield_feedback_remaining = maxf(0.0, _shield_feedback_remaining - delta)
 		if _pickup_remaining <= 0.0:
@@ -606,7 +694,7 @@ func _input(event: InputEvent) -> void:
 				joystick_id = event.index
 				update_joystick(point, size)
 			elif boost_hit(point, size):
-				boost_id = event.index
+				hold_boost_touch(event.index)
 			elif point.distance_to(skill_center(size)) < 60.0:
 				skill_id = event.index
 				use_skill()
@@ -615,8 +703,7 @@ func _input(event: InputEvent) -> void:
 				joystick_id = -1
 				joystick_vector = Vector2.ZERO
 				_steering_active = false
-			if event.index == boost_id:
-				boost_id = -1
+			release_boost_touch(event.index)
 			if event.index == skill_id:
 				skill_id = -1
 	elif event is InputEventScreenDrag and event.index == joystick_id:
@@ -825,7 +912,10 @@ func draw_minimap() -> void:
 func draw_power_button(at: Vector2, icon: Texture2D, caption: String, ready_fraction: float, color: Color, hint: String = "") -> void:
 	draw_circle(at, 44, Color(0.035, 0.045, 0.095, 0.86))
 	draw_arc(at, 43, 0, TAU, 36, Color(color, 0.18), 4)
-	draw_arc(at, 43, -PI / 2, -PI / 2 + TAU * clampf(ready_fraction, 0.001, 1.0), 36, color, 3)
+	var ring_color := color
+	if ready_fraction >= 0.999 and hint.is_empty() and not caption.begins_with("BOOST"):
+		ring_color.a *= 0.82 + 0.18 * sin(clock * 3.6)
+	draw_arc(at, 43, -PI / 2, -PI / 2 + TAU * clampf(ready_fraction, 0.001, 1.0), 36, ring_color, 3)
 	if icon != null:
 		draw_texture_rect(icon, Rect2(at - Vector2.ONE * 26, Vector2.ONE * 52), false, Color.WHITE if ready_fraction >= 0.99 or caption.begins_with("BOOST") else Color(0.6, 0.63, 0.8, 0.5))
 	if not hint.is_empty():
@@ -843,21 +933,25 @@ func draw_hud(size: Vector2) -> void:
 	var score_center := Vector2(size.x - 326, 0)
 	panel(Rect2(score_center.x - 59, 12, 118, 66), Color(0.045, 0.055, 0.12, 0.62), Color("3f4974"))
 	centered(Vector2(score_center.x, 31), "SCORE", 11, Color("c9cde9"))
-	centered(Vector2(score_center.x, 63), str(player.score), 28, accent)
+	var score_pop := sin(clampf(_score_pop_remaining / 0.3, 0, 1) * PI)
+	centered(Vector2(score_center.x, 63 - score_pop * 3.0), str(player.score), 28, accent.lerp(Color.WHITE, score_pop * 0.3))
 	# Ten real competitors; no opaque leaderboard card over the action.
 	var board_x := size.x - 218
 	text(Vector2(board_x, 98), "TOP SERPENTS", 12, Color("d2e6fa"))
 	draw_line(Vector2(board_x, 108), Vector2(size.x - 24, 108), Color(0.45, 0.65, 0.9, 0.35), 1)
-	for i in range(mini(10, _ranking.size())):
-		var snake := _ranking[i]
-		var color := accent if snake.id == player.id else Color("c3cadf")
+	var displayed_player_rank := _player_rank
+	for i in range(mini(10, _ranking_rows.size())):
+		var row: Dictionary = _ranking_rows[i]
+		var is_player := int(row.id) == player.id
+		var color := accent if is_player else Color("c3cadf")
 		var y := 128 + i * 21
-		if snake.id == player.id:
+		if is_player:
+			displayed_player_rank = int(row.rank)
 			draw_rect(Rect2(board_x - 5, y - 14, 199, 19), Color(accent, 0.1))
-		text(Vector2(board_x, y), str(i + 1), 12, color)
-		text(Vector2(board_x + 24, y), snake.nickname.left(11), 12, color)
-		text(Vector2(size.x - 65, y), str(snake.score), 12, color)
-	text(Vector2(board_x, 143 + mini(10, _ranking.size()) * 21), "YOU  #%d / %d" % [_player_rank, snakes.size()], 11, accent)
+		text(Vector2(board_x, y), str(row.rank_text), 12, color)
+		text(Vector2(board_x + 24, y), str(row.name), 12, color)
+		text(Vector2(size.x - 24 - float(row.score_width), y), str(row.score_text), LEADERBOARD_FONT_SIZE, color)
+	text(Vector2(board_x, 143 + mini(10, _ranking_rows.size()) * 21), "YOU  #%d / %d" % [displayed_player_rank, _ranking_rows.size()], 11, accent)
 	panel(Rect2(size.x - 69, 19, 48, 44), Color("142036"), Color("52648a"))
 	centered(Vector2(size.x - 45, 48), "Ⅱ", 22, Color("bbe3f5"))
 	var joy := joystick_center(size)
@@ -882,8 +976,7 @@ func draw_hud(size: Vector2) -> void:
 	var ability_icon: Texture2D = textures.get("icons/ability_%d" % player.skin)
 	draw_power_button(skill, ability_icon, SKILL_NAMES[player.skin], ready_fraction, accent, "" if player.cooldown <= 0 else str(ceili(player.cooldown)))
 	# The second center widget is another real hold area for boost, not an invented power.
-	var mass_fraction := clampf((player.mass - SnakeModel.MIN_MASS) / 80.0, 0, 1)
-	draw_power_button(boost_secondary_center(size), textures.get("hud/boost"), "BOOST · HOLD", mass_fraction, Color("ffcf79"))
+	draw_power_button(boost_secondary_center(size), textures.get("hud/boost"), "BOOST · HOLD", _boost_mass_display, Color("ffcf79"))
 	centered(Vector2(size.x / 2, size.y - 177), "%s  ·  LENGTH %d  ·  KILLS %d" % [player.nickname, player.segment_count(), player.kills], 11, Color("c4cce2"))
 	if _pickup_remaining > 0.0:
 		centered(Vector2(size.x / 2, size.y - 201), "+%d ENERGY" % _pickup_total, 15, Color(accent, minf(1.0, _pickup_remaining * 3.0)))

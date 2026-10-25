@@ -5,6 +5,7 @@ extends SceneTree
 var passed := 0
 var failed := 0
 var app: Control
+var ui_stress_complete := false
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -92,6 +93,228 @@ func mouse_button(at: Vector2, down: bool) -> void:
 	event.pressed = down
 	Input.parse_input_event(event)
 
+func mouse_motion(at: Vector2, held: bool = false) -> void:
+	var event := InputEventMouseMotion.new()
+	event.position = root.get_final_transform() * at
+	event.button_mask = MOUSE_BUTTON_MASK_LEFT if held else 0
+	Input.parse_input_event(event)
+
+func tap_button(caption: String, use_mouse: bool = false) -> bool:
+	var scope: Node = app.overlay if is_instance_valid(app.overlay) else app.screen
+	var found := find_button(caption,scope)
+	check(found != null and found.is_visible_in_tree(),"real pointer target is available: " + caption)
+	if found == null:
+		return false
+	var point: Vector2 = found.get_global_rect().get_center()
+	if use_mouse:
+		mouse_button(point,true)
+		mouse_button(point,false)
+	else:
+		touch(0,point,true)
+		touch(0,point,false)
+	await process_frame
+	return true
+
+func text_bounds(label: Label) -> Rect2:
+	var font: Font = label.get_theme_font("font")
+	var font_size: int = label.get_theme_font_size("font_size")
+	var content := label.size
+	var offset := Vector2.ZERO
+	if label.has_theme_stylebox_override("normal"):
+		var style: StyleBox = label.get_theme_stylebox("normal")
+		offset = Vector2(style.get_content_margin(SIDE_LEFT),style.get_content_margin(SIDE_TOP))
+		content -= offset+Vector2(style.get_content_margin(SIDE_RIGHT),style.get_content_margin(SIDE_BOTTOM))
+	var wrap_width := content.x if label.autowrap_mode != TextServer.AUTOWRAP_OFF else -1.0
+	var measured: Vector2 = font.get_multiline_string_size(label.text,HORIZONTAL_ALIGNMENT_LEFT,wrap_width,font_size)
+	if label.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER:
+		offset.x += maxf(0.0,(content.x-measured.x)*0.5)
+	elif label.horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT:
+		offset.x += maxf(0.0,content.x-measured.x)
+	if label.vertical_alignment == VERTICAL_ALIGNMENT_CENTER:
+		offset.y += maxf(0.0,(content.y-measured.y)*0.5)
+	elif label.vertical_alignment == VERTICAL_ALIGNMENT_BOTTOM:
+		offset.y += maxf(0.0,content.y-measured.y)
+	return label.get_global_transform()*Rect2(offset,measured)
+
+func geometry_valid(stage: String) -> bool:
+	var valid := true
+	var important: Array = []
+	for control in descendants(app.screen,"Control"):
+		if not control.is_visible_in_tree():
+			continue
+		if control is Label and not control.text.is_empty():
+			var glyphs := text_bounds(control)
+			var allocation: Rect2 = control.get_global_rect().grow(1.5)
+			if not allocation.encloses(glyphs):
+				print("CLIPPED TEXT ",stage,": ",control.text," glyphs=",glyphs," allocation=",allocation)
+				valid = false
+			important.append({"node":control,"rect":glyphs,"name":control.text})
+		elif control is Button:
+			important.append({"node":control,"rect":control.get_global_rect(),"name":control.text})
+	for i in range(important.size()):
+		for j in range(i+1,important.size()):
+			var a: Dictionary = important[i]
+			var b: Dictionary = important[j]
+			if a.node.is_ancestor_of(b.node) or b.node.is_ancestor_of(a.node):
+				continue
+			if a.rect.intersection(b.rect).get_area() > 5.0:
+				print("OVERLAP ",stage,": ",a.name," / ",b.name," ",a.rect.intersection(b.rect))
+				valid = false
+	return valid
+
+func artwork_covers_viewport() -> bool:
+	return app.background.get_global_rect().encloses(root.get_visible_rect())
+
+func popup_fits(dialog: Window) -> bool:
+	var origin := Vector2(dialog.position)
+	if not dialog.is_embedded():
+		origin -= Vector2(root.position)
+	var bounds := Rect2(origin,Vector2(dialog.size))
+	return Rect2(Vector2.ZERO,Vector2(root.size)).grow(1.0).encloses(bounds)
+
+func retired(node: Variant) -> bool:
+	if not is_instance_valid(node) or node.get_parent() == null:
+		return true
+	# Safe retirement during a GUI callback hides and blocks a layer immediately,
+	# then lets Godot finish the input dispatch before freeing it at frame end.
+	return not node.is_visible_in_tree() and node.mouse_filter == Control.MOUSE_FILTER_IGNORE and node.process_mode == Node.PROCESS_MODE_DISABLED
+
+func check_hud_regions(arena: Node2D) -> void:
+	var size: Vector2 = arena.get_viewport_rect().size
+	var regions := [
+		arena.minimap_state().bounds,
+		Rect2(arena.joystick_center(size)-Vector2.ONE*77,Vector2.ONE*154),
+		Rect2(arena.boost_center(size)-Vector2.ONE*62,Vector2.ONE*124),
+		Rect2(arena.skill_center(size)-Vector2.ONE*44,Vector2.ONE*88),
+		Rect2(arena.boost_secondary_center(size)-Vector2.ONE*44,Vector2.ONE*88),
+		Rect2(size.x-69,19,48,44)]
+	var contained := true
+	var separated := true
+	for i in range(regions.size()):
+		contained = contained and Rect2(Vector2.ZERO,size).encloses(regions[i])
+		for j in range(i+1,regions.size()):
+			separated = separated and regions[i].intersection(regions[j]).get_area() < 1.0
+	check(contained,"important HUD interaction areas stay within the canvas")
+	check(separated,"minimap joystick power boost and pause areas do not overlap")
+
+func ui_stress() -> void:
+	var stable_coins: int = app.profile.data.coins
+	var stable_runs: int = app.profile.data.stats.runs
+	var original_equipped: int = app.profile.data.equipped
+	root.mode = Window.MODE_WINDOWED
+	root.size = Vector2i(1280,720)
+	await process_frame
+	app.show_menu()
+	await create_timer(0.45).timeout
+	check(geometry_valid("lobby"),"lobby text and important controls are neither clipped nor overlapping")
+	var mode_button := find_button("OFFLINE")
+	var arena_title: Label = null
+	for item in descendants(app.screen,"Label"):
+		if item.is_visible_in_tree() and item.text == "NEON CITY":
+			arena_title = item
+	check(mode_button != null and arena_title != null and mode_button.get_global_rect().end.y <= arena_title.get_global_rect().position.y,"mode button's actual theme height does not overlap the arena title")
+	var start := find_button("START")
+	var start_point: Vector2 = start.get_global_rect().get_center()
+	mouse_motion(start_point)
+	await create_timer(0.17).timeout
+	check(start.scale.x > 1.001 and controls_in_view(),"actual hover animates START without moving it out of bounds")
+	mouse_button(start_point,true)
+	await create_timer(0.06).timeout
+	check(start.scale.x < 1.0,"press transition interrupts hover and visibly depresses START")
+	mouse_motion(Vector2(900,110),true)
+	mouse_button(Vector2(900,110),false)
+	await create_timer(0.2).timeout
+	check(app.current_page == "menu" and start.scale.is_equal_approx(Vector2.ONE),"dragging out and releasing restores START without starting a game")
+	var same_hero: Control = app.preview
+	for id in [0,1,0,1]:
+		var cell: Button = app.collection_cells[id]
+		var point := cell.get_global_rect().get_center()
+		mouse_button(point,true)
+		mouse_button(point,false)
+	await create_timer(0.4).timeout
+	check(app.preview == same_hero and app.preview.skin_id == 1 and app.profile.data.equipped == 1,"rapid owned-skin clicks reuse one hero and finish on the last actual selection")
+	check(app.profile.data.coins == stable_coins and app.profile.data.stats.runs == stable_runs,"skin transition animations cannot grant or spend rewards")
+	for caption in ["SHOP","MISSIONS","REWARDS","SETTINGS"]:
+		await tap_button(caption,caption == "SETTINGS")
+		var page: Control = app.overlay
+		check(is_instance_valid(page) and not app.preview.is_visible_in_tree(),"modal " + caption + " hides and blocks the underlying lobby")
+		check(geometry_valid("entrance " + caption),caption + " entrance keeps text and controls separate")
+		await tap_button("BACK")
+		check(retired(page),"BACK retires " + caption + " before another page can receive input")
+	await tap_button("SHOP")
+	await create_timer(0.4).timeout
+	var equipped_button := find_button("EQUIPPED",app.overlay)
+	check(equipped_button != null and equipped_button.get_parent().get_global_rect().encloses(equipped_button.get_global_rect()),"EQUIPPED button's actual theme height fits inside its skin card")
+	var first_page: Control = app.overlay
+	app.change_collection_page(1,2,true)
+	var sliding_page: Control = app.overlay
+	app.show_settings()
+	check(retired(first_page) and retired(sliding_page),"interrupting pagination immediately hides and blocks both old modal layers")
+	await create_timer(0.35).timeout
+	check(app.current_page == "settings" and geometry_valid("interrupted page"),"interrupted page tweens cannot resurrect or overlap the current settings page")
+	await tap_button("BACK")
+	await tap_button("SHOP")
+	await tap_button("›")
+	var preserved_page: Control = app.overlay
+	root.size = Vector2i(1600,720)
+	await create_timer(0.15).timeout
+	check(app.overlay == preserved_page and app.collection_page == 1,"live resize preserves the active collection page without rebuilding it")
+	check(artwork_covers_viewport() and controls_in_view() and geometry_valid("wide active shop"),"live wide resize keeps artwork text and controls within the active viewport")
+	await tap_button("BACK")
+	await tap_button("%s  /  LV. %d" % [app.profile.data.name,app.profile.data.level])
+	var edits := descendants(app.overlay,"LineEdit")
+	var edit: LineEdit = edits[0]
+	edit.text = "UNSAVED INPUT"
+	var form: Control = app.overlay
+	root.size = Vector2i(1280,900)
+	await create_timer(0.15).timeout
+	check(app.overlay == form and is_instance_valid(edit) and edit.text == "UNSAVED INPUT","live tall resize preserves unsaved form input and its existing control")
+	check(artwork_covers_viewport() and controls_in_view() and geometry_valid("tall profile"),"live tall resize keeps the open form and its text fully visible")
+	root.size = Vector2i(1280,720)
+	await create_timer(0.15).timeout
+	await tap_button("BACK")
+	app.collection_page = 0
+	await tap_button("SHOP")
+	await tap_button("250 COINS")
+	var dialog: ConfirmationDialog = app.purchase_dialog
+	check(is_instance_valid(dialog) and popup_fits(dialog),"purchase confirmation fits within the current physical window")
+	root.size = Vector2i(1600,720)
+	await create_timer(0.15).timeout
+	check(app.purchase_dialog == dialog and popup_fits(dialog),"live resize recenters the same purchase dialog inside the window")
+	app.notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	await process_frame
+	check(not is_instance_valid(app.purchase_dialog) and app.current_page == "shop","Android Back dismisses a purchase dialog before leaving its market page")
+	await tap_button("250 COINS")
+	var obsolete_dialog: ConfirmationDialog = app.purchase_dialog
+	app.show_menu()
+	if is_instance_valid(obsolete_dialog):
+		obsolete_dialog.confirmed.emit()
+	await process_frame
+	check(not is_instance_valid(obsolete_dialog) and not app.profile.data.owned.has(2) and app.profile.data.coins == stable_coins,"navigation removes purchase popups and rejects a stale confirmation callback")
+	app.toast("Interface check")
+	check(not app.toast_label.get_global_rect().intersects(find_button("START").get_global_rect()),"lobby notice cannot cover START")
+	await tap_button("SHOP")
+	app.toast("Interface check")
+	var notice_rect: Rect2 = app.toast_label.get_global_rect()
+	var covers_purchase := false
+	for item in descendants(app.overlay,"Button"):
+		if item.text.ends_with("COINS"):
+			covers_purchase = covers_purchase or notice_rect.intersects(item.get_global_rect())
+	check(not covers_purchase and geometry_valid("shop notice"),"shop notice does not cover purchase controls or important text")
+	await tap_button("BACK")
+	var preserved_best: int = app.profile.data.best_score
+	app.profile.data.coins = 2000000000
+	app.profile.data.best_score = 12345678
+	app.show_menu()
+	await create_timer(0.5).timeout
+	check(has_label("2000000000") and has_label("12345678") and geometry_valid("large exact values"),"large real menu values remain exact and fit their labels")
+	app.profile.data.coins = stable_coins
+	app.profile.data.best_score = preserved_best
+	app.profile.equip_skin(original_equipped)
+	app.show_menu()
+	check(app.profile.data.stats.runs == stable_runs and app.profile.data.coins == stable_coins,"all UI navigation and display animations preserve real economy and completed runs")
+	ui_stress_complete = true
+
 func check_power_timings() -> void:
 	var timings: Array = []
 	for label in descendants(app.overlay,"Label"):
@@ -158,7 +381,7 @@ func run() -> void:
 	await process_frame
 	check(app.current_page == "boot", "startup begins with custom Emnio splash")
 	check(not ProjectSettings.get_setting("application/boot_splash/show_image"), "engine boot logo is disabled")
-	check(ProjectSettings.get_setting("application/config/version") == "1.2.0","project reports version1.2.0")
+	check(ProjectSettings.get_setting("application/config/version") == "1.2.1","project reports version1.2.1")
 	check(app.boot_logo.texture.resource_path.ends_with("emnio_games.png"), "first animated splash uses the new Emnio Games studio artwork")
 	check(app.boot_active and app.boot_done <= app.boot_paths.size(), "loading counter measures actual resource jobs")
 	check(app.boot_status.text.is_empty() and not app.boot_status.visible, "splash contains no loading status phrases")
@@ -228,12 +451,14 @@ func run() -> void:
 	check(previews(app.overlay).size() == 4,"collection renders four previews per page")
 	check(previews(app.overlay)[0].skin_id == 0 and previews(app.overlay)[3].skin_id == 3,"first collection page contains skins0 through3")
 	check(controls_in_view(),"first collection page stays inside screen")
+	check(geometry_valid("collection first page"),"first collection page text and controls neither clip nor overlap")
 	check_power_timings()
 	press("›",app.overlay)
 	await process_frame
 	check(app.collection_page == 1,"next button changes collection page")
 	check(previews(app.overlay).size() == 4 and previews(app.overlay)[0].skin_id == 4 and previews(app.overlay)[3].skin_id == 7,"second page exposes all four additional skins")
 	check(controls_in_view() and english_page(),"second page fits screen and uses English descriptions")
+	check(geometry_valid("collection second page"),"all additional skin cards keep text and controls separate")
 	check_power_timings()
 	press("‹",app.overlay)
 	await process_frame
@@ -292,11 +517,13 @@ func run() -> void:
 	press("RECORDS")
 	await process_frame
 	check(has_label("LOCAL RECORD") and english_page(),"records screen identifies itself as local")
+	check(geometry_valid("records"),"local record text and controls fit without overlap")
 	press("BACK")
 	await process_frame
 	press("ACHIEVEMENTS")
 	await process_frame
 	check(app.profile.achievements().size() == 4 and english_page(),"achievement page shows real English milestones")
+	check(geometry_valid("achievements"),"achievement rows and status labels neither clip nor overlap")
 	press("BACK")
 	await process_frame
 	press("SETTINGS")
@@ -324,6 +551,7 @@ func run() -> void:
 	await process_frame
 	var credits := descendants(app.overlay,"RichTextLabel")
 	check(credits.size() == 1,"credits opens scrollable license text")
+	check(geometry_valid("credits"),"credits heading and navigation do not overlap the scrollable license body")
 	if credits.size() == 1:
 		check(credits[0].text.contains("Godot Engine") and credits[0].text.contains("Permission is hereby granted") and credits[0].text.contains("Bitstream"),"credits include Godot and font attribution/license")
 	press("BACK")
@@ -346,6 +574,7 @@ func run() -> void:
 	await process_frame
 	check(app.current_page == "online" and find_button("HOST ROOM") != null and find_button("JOIN ROOM") != null,"online page exposes host and join actions")
 	check(english_page() and controls_in_view(),"online connection page is English and fits viewport")
+	check(geometry_valid("online"),"online address labels and connection controls neither clip nor overlap")
 	press("JOIN ROOM")
 	await process_frame
 	check(app.current_page == "online" and is_instance_valid(app.toast_label) and app.toast_label.text.contains("IP address"),"empty join address reports validation without fake connected state")
@@ -383,8 +612,7 @@ func run() -> void:
 		app.show_menu()
 		await process_frame
 		check(controls_in_view(),"menu controls visible at physical%s" % dimensions)
-		var logical_size: Vector2 = root.get_visible_rect().size
-		check(app.background.size.is_equal_approx(logical_size) and app.background.global_position.is_equal_approx(Vector2.ZERO),"menu artwork fills viewport without black bars at%s" % dimensions)
+		check(artwork_covers_viewport(),"animated artwork covers viewport without black bars at%s" % dimensions)
 		app.show_collection(false)
 		await process_frame
 		check(controls_in_view(),"collection controls visible at physical%s" % dimensions)
@@ -406,6 +634,7 @@ func run() -> void:
 	await process_frame
 	var initial_map: Dictionary = arena.minimap_state()
 	check_minimap(arena,initial_map)
+	check_hud_regions(arena)
 	var minimap_started: float = arena.elapsed
 	var start_position: Vector2 = arena.player.position
 	await create_timer(0.3).timeout
@@ -417,6 +646,21 @@ func run() -> void:
 	check(float(updated_map.refresh_interval) >= 0.1 and refreshes >= 1 and refreshes <= refresh_limit,"actual minimap refresh count respects its capped update budget")
 	var updated_player_marker: Vector2 = updated_map.player
 	check(updated_player_marker.distance_to(initial_map.player) > 0.1 and (updated_player_marker-Vector2(updated_map.center)).normalized().dot(arena.player.position.normalized()) > 0.98,"minimap player indicator updates with real movement in the correct direction")
+	var rows: Array = arena.leaderboard_state()
+	var ranks_valid := not rows.is_empty()
+	var text_fits := true
+	var player_rows := 0
+	for i in range(rows.size()):
+		var row: Dictionary = rows[i]
+		ranks_valid = ranks_valid and int(row.rank) == i+1 and str(row.rank_text) == str(i+1)
+		if i > 0:
+			ranks_valid = ranks_valid and int(rows[i-1].score) >= int(row.score)
+		if bool(row.player):
+			player_rows += 1
+		text_fits = text_fits and arena.font.get_string_size(str(row.name),HORIZONTAL_ALIGNMENT_LEFT,-1,12).x <= 111.0
+		text_fits = text_fits and arena.font.get_string_size(str(row.score_text),HORIZONTAL_ALIGNMENT_LEFT,-1,12).x <= 44.0
+	check(ranks_valid and player_rows == 1,"leaderboard renders one coherent sorted score and rank snapshot with the actual player")
+	check(text_fits,"leaderboard displayed names and scores fit their assigned pixel widths")
 	var old_score: int = arena.player.score
 	arena.foods[0].p = arena.player.position+Vector2.from_angle(arena.player.heading)*8
 	arena.foods[0].v = 8
@@ -449,6 +693,20 @@ func run() -> void:
 	touch(3,Vector2.ZERO,false)
 	await process_frame
 	check(arena.joystick_id == -1 and arena.boost_id == -1,"touch release clears control owners")
+	touch(3,arena.boost_center(viewport_size),true)
+	touch(4,arena.boost_secondary_center(viewport_size),true)
+	await create_timer(0.06).timeout
+	touch(4,Vector2.ZERO,false)
+	await create_timer(0.06).timeout
+	check(arena.boost_id == 3 and arena.player.boosting,"releasing center boost preserves the simultaneously held primary boost")
+	touch(3,Vector2.ZERO,false)
+	touch(3,arena.boost_center(viewport_size),true)
+	touch(4,arena.boost_secondary_center(viewport_size),true)
+	touch(3,Vector2.ZERO,false)
+	await create_timer(0.06).timeout
+	check(arena.boost_id == 4 and arena.player.boosting,"releasing primary boost preserves the simultaneously held center boost")
+	touch(4,Vector2.ZERO,false)
+	await process_frame
 	touch(4,arena.boost_secondary_center(viewport_size),true)
 	await physics_frame
 	await process_frame
@@ -485,6 +743,25 @@ func run() -> void:
 	check(app.profile.data.stats.runs == 1 and float(app.profile.data.stats.survival) > 0.5,"defeat saves exactly one run with survival time")
 	check(app.profile.data.best_score >= 8 and int(app.reward.coins) >= 10 and int(app.reward.xp) >= 15,"collected score updates record and real rewards")
 	check(controls_in_view() and english_page(),"results are English and controls fit screen")
+	var score_counter: Label = app.screen.find_child("AnimatedFinalScore",true,false)
+	check(score_counter != null and int(score_counter.get_meta("target_value")) == int(app.last_result.score),"result animation targets the actual completed-run score")
+	var score_before: int = int(score_counter.get_meta("displayed_value"))
+	await create_timer(0.7).timeout
+	check(int(score_counter.get_meta("displayed_value")) == int(app.last_result.score) and score_counter.text == str(app.last_result.score) and int(score_counter.get_meta("displayed_value")) >= score_before,"animated score reaches its exact real final value")
+	var earned_coins: Label = app.screen.find_child("AnimatedCoins",true,false)
+	var earned_xp: Label = app.screen.find_child("AnimatedXP",true,false)
+	check(earned_coins.text == "+%d" % app.reward.coins and earned_xp.text == "+%d" % app.reward.xp,"reward animations finish on the exact coins and XP actually granted")
+	check(geometry_valid("settled results"),"settled result numbers and controls neither clip nor overlap")
+	var rewarded_coins: int = app.profile.data.coins
+	var rewarded_runs: int = app.profile.data.stats.runs
+	app.show_results()
+	app.show_results()
+	var replay_score: Label = app.screen.find_child("AnimatedFinalScore",true,false)
+	var replay_initial: int = int(replay_score.get_meta("displayed_value"))
+	await create_timer(0.2).timeout
+	check(replay_initial == 0 and int(replay_score.get_meta("displayed_value")) > 0 and int(replay_score.get_meta("displayed_value")) < int(app.last_result.score),"result score visibly progresses through real intermediate numbers")
+	await create_timer(0.6).timeout
+	check(app.profile.data.coins == rewarded_coins and app.profile.data.stats.runs == rewarded_runs,"replaying and interrupting result animations cannot farm a second reward")
 	press("PLAY AGAIN")
 	await process_frame
 	check(app.current_page == "game" and app.game.player.alive,"restart begins fresh playable serpent")
@@ -500,6 +777,8 @@ func run() -> void:
 	check(reopened.data.name == "NOVA TEST" and reopened.data.equipped == 1 and reopened.data.owned.has(1),"name inventory and equipped skin survive reopen")
 	check(reopened.data.best_score == app.profile.data.best_score and reopened.data.coins == app.profile.data.coins,"economy and record survive reopen")
 	check(reopened.data.settings.quality == "Low" and not reopened.data.settings.sound and not reopened.data.settings.music,"graphics and independent audio preferences survive reopen")
+	await ui_stress()
+	check(ui_stress_complete,"the complete UI stress workflow executed without aborting a coroutine")
 	app.queue_free()
 	await process_frame
 	await create_timer(0.25).timeout

@@ -1,0 +1,476 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: New profile uses defaults
+PASS: Starting economy
+PASS: Eight complete skin definitions available
+PASS: New profiles use English name and current schema
+PASS: Music and effects enabled independently by default
+PASS: Starter inventory
+PASS: Cannot equip locked skin
+PASS: Unknown skin rejected
+PASS: Insufficient funds rejected
+PASS: Rejected purchase leaves coins unchanged
+PASS: Purchase writes real inventory
+PASS: Purchase deducts exact price
+PASS: Duplicate purchase rejected
+PASS: Owned skin equips
+PASS: Name edit persists
+PASS: Empty names rejected
+PASS: English graphics setting changes
+PASS: Sound setting changes
+PASS: Disabling effects leaves music enabled
+PASS: Music can be disabled separately
+PASS: Enabling effects leaves music disabled
+PASS: Effects preference restores independently
+PASS: Music setting requires a boolean
+PASS: Difficulty setting changes
+PASS: Unknown graphics profile rejected
+PASS: Invalid difficulty rejected
+PASS: Unknown setting rejected
+PASS: Saved profile reloads
+PASS: Name and selected skin survive restart
+PASS: All independent audio and graphics settings survive restart
+PASS: Incomplete mission cannot be claimed
+PASS: Run rewards use score, survival, kills
+PASS: High score recorded
+PASS: XP advances level
+PASS: Statistics accumulate
+PASS: Achievements unlock from actual stats
+PASS: Mission becomes claimable after progress
+PASS: Mission pays persistent rewards
+PASS: Mission cannot be claimed twice
+PASS: Invalid mission index rejected
+PASS: Daily chest pays once
+PASS: Daily cooldown prevents duplicate payout
+PASS: Earned coins unlock legendary skin
+PASS: Abandon does not grant fabricated rewards
+PASS: Repeated save safely refreshes backup
+PASS: Corrupted primary recovers valid backup
+PASS: Recovery preserves inventory and balance
+PASS: Recovered profile can be saved
+PASS: Recovered save becomes healthy primary
+PASS: Mission claims and daily cooldown survive restart
+PASS: v1 profile migrates to current schema: Baixo
+PASS: Legacy graphics choice migrates to English: Baixo
+PASS: Migration preserves previous whole-audio preference: Baixo
+PASS: Migration preserves balances inventory and player-chosen name: Baixo
+PASS: Migrated profile saves in current format: Baixo
+PASS: Migrated settings survive restart: Baixo
+PASS: v1 profile migrates to current schema: Médio
+PASS: Legacy graphics choice migrates to English: Médio
+PASS: Migration preserves previous whole-audio preference: Médio
+PASS: Migration preserves balances inventory and player-chosen name: Médio
+PASS: Migrated profile saves in current format: Médio
+PASS: Migrated settings survive restart: Médio
+PASS: v1 profile migrates to current schema: Alto
+PASS: Legacy graphics choice migrates to English: Alto
+PASS: Migration preserves previous whole-audio preference: Alto
+PASS: Migration preserves balances inventory and player-chosen name: Alto
+PASS: Migrated profile saves in current format: Alto
+PASS: Migrated settings survive restart: Alto
+PASS: New catalog skin can be purchased and equipped: 5
+PASS: New catalog skin cannot be purchased twice: 5
+PASS: New catalog skin can be purchased and equipped: 6
+PASS: New catalog skin cannot be purchased twice: 6
+PASS: New catalog skin can be purchased and equipped: 7
+PASS: New catalog skin cannot be purchased twice: 7
+PASS: New skins deduct their exact combined price
+PASS: Expanded inventory and selected skin persist
+PASS: Expanded catalog contains power metadata and prices
+PASS: Future save version cannot be overwritten
+PASS: Future save remains intact
+PROFILE TESTS: 79 checks, 0 failures
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS starter snake has ten connected segments with boost mass
+PASS constant movement covers expected distance
+PASS straight movement maintains axis
+PASS body is sampled by distance with consistent segment spacing
+PASS smooth curved path preserves spacing
+PASS small snake turns responsively while large snake keeps readable radius
+PASS steering reaches nearby target without overshoot
+PASS steering crosses angular wrap by shortest route
+PASS 30 and 60 Hz steering settle consistently
+PASS rapid boost and dash direction changes keep body connected
+PASS movement is time based at 30 FPS
+PASS energy grows snake and awards score
+PASS boost increases actual movement speed
+PASS boost consumes mass with lower bound
+PASS boost stops at minimum mass
+PASS skill activates when ready
+PASS cooldown blocks repeated activation
+PASS electric overdrive changes speed
+PASS skill tracks cooldown and duration independently
+PASS cooldown expires and permits reuse
+PASS skill can activate after cooldown
+PASS cyber shield absorbs a collision
+PASS shield is consumed by collision
+PASS consumed shield does not prevent later collision
+PASS phantom avoids collision and negative slow while active
+PASS phantom protection has finite duration
+PASS samurai dash produces real speed increase
+PASS samurai dash is brief and cooldown limited
+PASS solar magnet expands actual collection radius
+PASS solar magnet range returns to normal after duration
+PASS all eight skill durations and cooldowns match catalog
+PASS fixed ring history wraps while long curved body keeps spacing
+PASS spatial query includes neighboring and negative cells
+PASS spatial hash resets without stale collisions
+PASS low profile starts player, five bots and pooled energy
+PASS HUD exposes initial spawn protection and safe-center state
+PASS leaderboard order, scores and names remain one coherent cached snapshot
+PASS displayed leaderboard scores stay descending between refreshes
+PASS leaderboard does not mix live scores into its throttled display
+PASS next leaderboard refresh updates order, name and score together
+PASS online player identity highlights and ranks its actual nonzero snake ID
+PASS equal-score leaderboard ties have deterministic stable ordering
+PASS external leaderboard inspection cannot mutate rendered cached rows
+PASS wide Latin and Unicode leaderboard names fit their actual pixel budget
+PASS long leaderboard names use measured ellipsis while short names remain intact
+PASS huge scores use bounded compact labels while keeping exact ranking values
+PASS pixel-fitted names and right-aligned score column keep a safe gap
+PASS boost mass meter interpolates toward actual reserve without jumping
+PASS boost mass animation stays bounded and converges
+PASS score pop starts only after a real score increase
+PASS score animation freezes while gameplay is paused
+PASS score animation expires without repeated score changes
+PASS joystick center noise below enter radius cannot drift
+PASS hysteresis retains a deliberate small held direction
+PASS return to center releases steering until enter threshold crossed again
+PASS joystick drag outside radius stays normalized
+PASS boundary danger rises before reaching lethal arena edge
+PASS boundary warning clears when returning toward center
+PASS circular minimap contains actual live actors and one player marker
+PASS minimap world mapping stays within circular boundary
+PASS minimap cache does not rebuild on every render frame
+PASS minimap refreshes throttled cache from changed actor positions
+PASS three simultaneous touch identities steer, boost and use skill
+PASS touch ability button changes actual ability state
+PASS releasing joystick preserves held boost touch
+PASS center boost widget is bound to the real held boost control
+PASS releasing center boost preserves the independently held primary touch
+PASS remaining primary touch continues actual accelerated movement
+PASS releasing primary boost preserves an independently held center touch
+PASS remaining center touch continues actual accelerated movement
+PASS releasing the final boost owner clears the held boost state
+PASS focus loss clears every boost owner so stale releases cannot revive boosting
+PASS late touch releases remain safe after boost-owner reset
+PASS touch pause ignores duplicate Android mouse emulation
+PASS pause clears every held touch identity and steering latch
+PASS application focus loss clears controls without stuck boost
+PASS Android application pause suspends active local gameplay
+PASS arena collection deactivates food and awards real mass
+PASS pickup feedback aggregates actual collected energy
+PASS pickup feedback freezes while paused
+PASS pickup feedback expires instead of accumulating UI objects
+PASS flame burst slows nearby opponents
+PASS frost ability creates persistent slowing trail
+PASS frozen trail slows other snakes
+PASS toxic cloud slows opponents inside its area
+PASS solar magnet actually collects energy beyond normal radius
+PASS remote control advances same model and consumes skill tap
+PASS network clients can disable local authoritative simulation
+PASS bot steers away from lethal arena edge
+PASS actual body collision consumes shield and triggers bounded feedback
+PASS head-body collision eliminates snake and credits killer
+PASS player death begins defeat transition
+PASS unprotected head-to-head collision eliminates both consistently
+PASS protected head survives head-to-head without extending protection
+PASS result signal supplies actual match statistics
+GAMEPLAY TESTS: 95 checks, 0 failures
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: startup begins with custom Emnio splash
+PASS: engine boot logo is disabled
+PASS: project reports version1.2.1
+PASS: first animated splash uses the new Emnio Games studio artwork
+PASS: loading counter measures actual resource jobs
+PASS: splash contains no loading status phrases
+PASS: short splash reaches menu
+PASS: all24 snake sprite jobs and4 shared resources finish
+PASS: eight distinct serpent definitions load
+PASS: menu has one animated equipped serpent
+PASS: menu uses actual looping Ogg music
+PASS: menu music plays by default
+PASS: menu controls fit current viewport
+PASS: menu presents English text
+PASS: functional button exists: CHANGE SERPENT
+PASS: CHANGE SERPENT toolbar opens the real collection
+PASS: functional button exists: BACK
+PASS: lobby collection rail exposes all eight actual skins
+PASS: locked rail skin opens its actual market page
+PASS: functional button exists: ‹
+PASS: functional button exists: BACK
+PASS: lobby presents the equipped serpent in its animated hero pose
+PASS: selected serpent occupies the center of the lobby
+PASS: all five functional features occupy the lobby's left column
+PASS: lobby exposes the real START action
+PASS: START action occupies the lobby's lower right
+PASS: menu has an animated atmospheric layer
+PASS: equipped lobby serpent visibly changes pose over time
+PASS: ambient animation advances while menu is visible
+PASS: functional button exists: SERPENTS
+PASS: dispatched pointer press produces visible button feedback
+PASS: button feedback keeps controls inside viewport
+PASS: collection opens
+PASS: collection renders four previews per page
+PASS: first collection page contains skins0 through3
+PASS: first collection page stays inside screen
+PASS: first collection page text and controls neither clip nor overlap
+PASS: collection page exposes four readable power timing labels
+PASS: Volt Serpent card reports real duration and cooldown
+PASS: Inferno Viper card reports real duration and cooldown
+PASS: Frost Fang card reports real duration and cooldown
+PASS: Cyber Reaper card reports real duration and cooldown
+PASS: functional button exists: ›
+PASS: next button changes collection page
+PASS: second page exposes all four additional skins
+PASS: second page fits screen and uses English descriptions
+PASS: all additional skin cards keep text and controls separate
+PASS: collection page exposes four readable power timing labels
+PASS: Shadow Phantom card reports real duration and cooldown
+PASS: Solar Wyrm card reports real duration and cooldown
+PASS: Neon Samurai card reports real duration and cooldown
+PASS: Toxic Fang card reports real duration and cooldown
+PASS: functional button exists: ‹
+PASS: functional button exists: 150 COINS
+PASS: purchase opens genuine confirmation dialog
+PASS: purchase confirmation is English
+PASS: confirmed purchase grants skin and deducts150 coins
+PASS: functional button exists: EQUIP
+PASS: equip changes persisted selected skin
+PASS: Owned filter displays purchased skins only
+PASS: Locked filter excludes owned skins and paginates remainder
+PASS: functional button exists: BACK
+PASS: functional button exists: SHOP
+PASS: shop opens functional English market
+PASS: functional button exists: BACK
+PASS: functional button exists: MISSIONS
+PASS: English missions expose real reward actions
+PASS: functional button exists: CLAIM
+PASS: unfinished mission cannot pay reward
+PASS: functional button exists: BACK
+PASS: functional button exists: REWARDS
+PASS: functional button exists: OPEN CRATE
+PASS: daily crate pays75 coins3 gems2 fragments
+PASS: functional button exists: OPEN CRATE
+PASS: daily reward cannot be claimed twice
+PASS: functional button exists: BACK
+PASS: functional button exists: RECORDS
+PASS: records screen identifies itself as local
+PASS: local record text and controls fit without overlap
+PASS: functional button exists: BACK
+PASS: functional button exists: ACHIEVEMENTS
+PASS: achievement page shows real English milestones
+PASS: achievement rows and status labels neither clip nor overlap
+PASS: functional button exists: BACK
+PASS: functional button exists: SETTINGS
+PASS: settings exposes independent SFX and music switches
+PASS: SFX mute leaves music playing
+PASS: music switch independently stops music
+PASS: SFX can be re-enabled while music remains muted
+PASS: quality selector exists
+PASS: Low quality applies30 FPS target
+PASS: settings controls fit screen and use English
+PASS: functional button exists: CREDITS & LICENSES
+PASS: credits opens scrollable license text
+PASS: credits heading and navigation do not overlap the scrollable license body
+PASS: credits include Godot and font attribution/license
+PASS: functional button exists: BACK
+PASS: functional button exists: PILOT  /  LV. 1
+PASS: profile editor exposes name input
+PASS: functional button exists: SAVE NAME
+PASS: profile editor saves name
+PASS: functional button exists: BACK
+PASS: functional button exists: OFFLINE
+PASS: mode selector exposes actual online workflow
+PASS: functional button exists: START ONLINE
+PASS: online page exposes host and join actions
+PASS: online connection page is English and fits viewport
+PASS: online address labels and connection controls neither clip nor overlap
+PASS: functional button exists: JOIN ROOM
+PASS: empty join address reports validation without fake connected state
+PASS: functional button exists: HOST ROOM
+PASS: host button starts actual networking arena
+PASS: host arena reports an open ENet room
+PASS: leaving hosted room returns to menu
+PASS: leaving room cannot grant farming rewards
+PASS: functional button exists: JOIN ROOM
+PASS: join button starts actual client connection attempt
+PASS: unreachable client does not pretend to be connected
+PASS: menu controls visible at physical(1280, 720)
+PASS: animated artwork covers viewport without black bars at(1280, 720)
+PASS: collection controls visible at physical(1280, 720)
+PASS: menu controls visible at physical(1600, 720)
+PASS: animated artwork covers viewport without black bars at(1600, 720)
+PASS: collection controls visible at physical(1600, 720)
+PASS: menu controls visible at physical(1280, 900)
+PASS: animated artwork covers viewport without black bars at(1280, 900)
+PASS: collection controls visible at physical(1280, 900)
+PASS: functional button exists: START
+PASS: play starts actual offline arena
+PASS: equipped skin and saved name reach gameplay
+PASS: player starts as a short serpent rather than large adult
+PASS: arena creates real energy and bot competitors
+PASS: arena music track changes while preserving independent mute
+PASS: spawn HUD reflects actual temporary protection
+PASS: central spawn has no false boundary danger
+PASS: circular minimap fits the upper left of the arena
+PASS: minimap exposes a finite player position inside its circle
+PASS: minimap identifies the actual player and all initial opponents
+PASS: minimap markers use actual snake IDs and stay inside the circle
+PASS: minimap marker directions agree with opponents' real world positions
+PASS: actual minimap transform centers the world and keeps all arena corners visible
+PASS: important HUD interaction areas stay within the canvas
+PASS: minimap joystick power boost and pause areas do not overlap
+PASS: snake continuously moves through physics updates
+PASS: protection indicator counts down with simulation time
+PASS: actual minimap refresh count respects its capped update budget
+PASS: minimap player indicator updates with real movement in the correct direction
+PASS: leaderboard renders one coherent sorted score and rank snapshot with the actual player
+PASS: leaderboard displayed names and scores fit their assigned pixel widths
+PASS: food collision increases real score
+PASS: real energy collection activates pickup feedback
+PASS: dispatcher delivers simultaneous joystick and boost touches
+PASS: third touch activates power without dropping joystick or boost
+PASS: active ability has a live HUD duration indicator
+PASS: releasing boost preserves steering and ability fingers
+PASS: releasing steering preserves independent boost and ability fingers
+PASS: releasing ability preserves held boost
+PASS: touch release clears control owners
+PASS: releasing center boost preserves the simultaneously held primary boost
+PASS: releasing primary boost preserves the simultaneously held center boost
+PASS: secondary center BOOST control drives actual acceleration
+PASS: dispatched pause touch pauses simulation
+PASS: pause clears every held touch owner
+PASS: paused simulation stops movement
+PASS: approaching real arena boundary triggers a graduated warning
+PASS: boundary HUD intensifies as lethal edge approaches
+PASS: boundary warning clears when returning to safe center
+PASS: continue touch resumes gameplay
+PASS: lethal world boundary reaches clear ELIMINATED result
+PASS: ordinary defeat never claims network connection loss
+PASS: defeat saves exactly one run with survival time
+PASS: collected score updates record and real rewards
+PASS: results are English and controls fit screen
+PASS: result animation targets the actual completed-run score
+PASS: animated score reaches its exact real final value
+PASS: reward animations finish on the exact coins and XP actually granted
+PASS: settled result numbers and controls neither clip nor overlap
+PASS: replaying and interrupting result animations cannot farm a second reward
+PASS: functional button exists: PLAY AGAIN
+PASS: restart begins fresh playable serpent
+PASS: standalone ability touch is not intercepted by the steering region
+PASS: abandon returns to menu without farming rewards
+PASS: new profile instance reloads saved state
+PASS: name inventory and equipped skin survive reopen
+PASS: economy and record survive reopen
+PASS: graphics and independent audio preferences survive reopen
+PASS: lobby text and important controls are neither clipped nor overlapping
+PASS: mode button's actual theme height does not overlap the arena title
+PASS: actual hover animates START without moving it out of bounds
+PASS: press transition interrupts hover and visibly depresses START
+PASS: dragging out and releasing restores START without starting a game
+PASS: rapid owned-skin clicks reuse one hero and finish on the last actual selection
+PASS: skin transition animations cannot grant or spend rewards
+PASS: real pointer target is available: SHOP
+PASS: modal SHOP hides and blocks the underlying lobby
+PASS: SHOP entrance keeps text and controls separate
+PASS: real pointer target is available: BACK
+PASS: BACK retires SHOP before another page can receive input
+PASS: real pointer target is available: MISSIONS
+PASS: modal MISSIONS hides and blocks the underlying lobby
+PASS: MISSIONS entrance keeps text and controls separate
+PASS: real pointer target is available: BACK
+PASS: BACK retires MISSIONS before another page can receive input
+PASS: real pointer target is available: REWARDS
+PASS: modal REWARDS hides and blocks the underlying lobby
+PASS: REWARDS entrance keeps text and controls separate
+PASS: real pointer target is available: BACK
+PASS: BACK retires REWARDS before another page can receive input
+PASS: real pointer target is available: SETTINGS
+PASS: modal SETTINGS hides and blocks the underlying lobby
+PASS: SETTINGS entrance keeps text and controls separate
+PASS: real pointer target is available: BACK
+PASS: BACK retires SETTINGS before another page can receive input
+PASS: real pointer target is available: SHOP
+PASS: EQUIPPED button's actual theme height fits inside its skin card
+PASS: interrupting pagination immediately hides and blocks both old modal layers
+PASS: interrupted page tweens cannot resurrect or overlap the current settings page
+PASS: real pointer target is available: BACK
+PASS: real pointer target is available: SHOP
+PASS: real pointer target is available: ›
+PASS: live resize preserves the active collection page without rebuilding it
+PASS: live wide resize keeps artwork text and controls within the active viewport
+PASS: real pointer target is available: BACK
+PASS: real pointer target is available: NOVA TEST  /  LV. 1
+PASS: live tall resize preserves unsaved form input and its existing control
+PASS: live tall resize keeps the open form and its text fully visible
+PASS: real pointer target is available: BACK
+PASS: real pointer target is available: SHOP
+PASS: real pointer target is available: 250 COINS
+PASS: purchase confirmation fits within the current physical window
+PASS: live resize recenters the same purchase dialog inside the window
+PASS: Android Back dismisses a purchase dialog before leaving its market page
+PASS: real pointer target is available: 250 COINS
+PASS: navigation removes purchase popups and rejects a stale confirmation callback
+PASS: lobby notice cannot cover START
+PASS: real pointer target is available: SHOP
+PASS: shop notice does not cover purchase controls or important text
+PASS: real pointer target is available: BACK
+PASS: large real menu values remain exact and fit their labels
+PASS: all UI navigation and display animations preserve real economy and completed runs
+PASS: the complete UI stress workflow executed without aborting a coroutine
+FLOW RESULT: 241 passed, 0 failed
+--- client-host.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: host HUD caches the actual room port and LAN connection hint
+PASS: server accepted real remote human
+PASS: server accepted rate-limited input packets
+PASS: server awarded food to remote player
+PASS: server applied remote skill request and cooldown
+NETWORK host: 6 checks, 0 failures
+
+--- client.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: client handshake assigns distinct authoritative snake
+PASS: client receives ongoing authoritative snapshots
+PASS: client sends steering inputs
+PASS: remote steering produces visible synchronized motion
+PASS: tiny active joystick direction reaches host without a second deadzone
+PASS: server preserves selected skin and nickname
+PASS: food growth and ability cooldown synchronize from host
+PASS: real initial food data synchronized
+NETWORK client: 9 checks, 0 failures
+
+--- disconnect-host.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: host HUD caches the actual room port and LAN connection hint
+PASS: server accepted real remote human
+PASS: server accepted rate-limited input packets
+PASS: server awarded food to remote player
+PASS: server applied remote skill request and cooldown
+NETWORK host: 6 checks, 0 failures
+
+--- disconnect.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: connection failure returns honest network error without match rewards
+NETWORK disconnect: 2 checks, 0 failures
+
+--- unreachable.log ---
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+PASS: ENet peer created
+PASS: connection failure returns honest network error without match rewards
+NETWORK unreachable: 2 checks, 0 failures
+
+MULTIPLAYER PASS: real two-process UDP movement, food, cooldowns, host disconnect and timeout; logs=/tmp/warserpent-network-6w0i9cz6
+Logs da execução: /tmp/warserpent-flow-tests.2YXkCR

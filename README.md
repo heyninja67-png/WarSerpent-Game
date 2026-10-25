@@ -1,4 +1,4 @@
-# War Serpent.io — Emnio Games — v1.2.0
+# War Serpent.io — Emnio Games — v1.2.1
 
 A native Godot 4.6.3 Android serpent arena. English UI, eight distinct serpents, real offline AI, direct-connect multiplayer, synthwave music and persistent local progression.
 
@@ -9,18 +9,25 @@ A native Godot 4.6.3 Android serpent arena. English UI, eight distinct serpents,
 - [Latest releases](https://github.com/heyninja67-png/WarSerpent-Game/releases)
 - Application ID: `com.emnioggs.warserpent`.
 - Android 7.0/API 24+, ARM64 or ARMv7, OpenGL ES 3; target API 36.
-- Version 1.2.0, version code 3. The signing certificate is unchanged from v1.0.0, so install over the previous APK to retain your save. Do not uninstall first.
+- Version 1.2.1, version code 4. The signing certificate is unchanged from v1.0.0, so install over the previous APK to retain your save. Do not uninstall first.
 - Release-mode optimized engine export, signed with the existing development identity. This is a sideload build, not a Play Store release.
 
 The current machine has no Android device/emulator. Read [BUILD_REPORT.md](BUILD_REPORT.md) for what was actually tested, benchmark limits, and APK verification.
 
-## New in 1.2
+## New in 1.2.1
+
+- Restored all24 original angular/cyber head/body/tail sprites exactly from the1.1 source, preserving all eight identities and powers.
+- Kept the game lobby, gold START, circular minimap, purple arena and Emnio Games branding.
+- Improved interface lifecycle/resize/input behavior and added bounded entrance, selection and result animations.
+- Fixed simultaneous BOOST-touch release and made cached leaderboard rows internally consistent.
+
+## Included in 1.2
 
 - A new original War Serpent.io wordmark and serpent emblem, with matching Android icon.
 - Game-style lobby: top profile/currencies, left feature navigation, a large coiled serpent on an animated podium, a live collection rail, and a gold START button at bottom right. Collection cards show ability timings; results and touch feedback stay functional.
 - More responsive small-snake steering, joystick deadzone hysteresis and reliable input reset after pause/focus changes.
 - Clearer spawn protection, power duration, pickups and arena-boundary warnings.
-- Circular live minimap, compact time/score/leaderboard, grouped real power controls, a purple raised-block arena and eight glossy expressive serpent designs. Instanced rendering remains enabled.
+- Circular live minimap, compact time/score/leaderboard, grouped real power controls, a purple raised-block arena and eight classic angular cyber-serpent designs. Instanced rendering remains enabled.
 - A new original Emnio Games studio logo and animated opening, without loading slogans.
 
 ## Included features

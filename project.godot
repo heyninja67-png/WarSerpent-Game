@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 config/name="War Serpent.io"
-config/version="1.2.0"
+config/version="1.2.1"
 boot_splash/show_image=false
 boot_splash/bg_color=Color(0.012, 0.018, 0.035, 1)
 run/main_scene="res://scenes/Main.tscn"
